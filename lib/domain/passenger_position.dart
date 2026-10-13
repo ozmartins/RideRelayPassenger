@@ -1,0 +1,35 @@
+/// Posição geográfica atual do passageiro.
+///
+/// Existe apenas em memória, lida continuamente do sensor de localização do
+/// aparelho enquanto a tela de mapa está em primeiro plano; nunca persistida
+/// nem enviada a relay ou servidor nesta feature (Assumptions do `spec.md`).
+class PassengerPosition {
+  const PassengerPosition({
+    required this.latitude,
+    required this.longitude,
+    required this.capturedAt,
+  });
+
+  /// Latitude em graus decimais.
+  final double latitude;
+
+  /// Longitude em graus decimais.
+  final double longitude;
+
+  /// Instante em que esta posição foi lida do sensor.
+  final DateTime capturedAt;
+
+  @override
+  bool operator ==(Object other) =>
+      other is PassengerPosition &&
+      other.latitude == latitude &&
+      other.longitude == longitude &&
+      other.capturedAt == capturedAt;
+
+  @override
+  int get hashCode => Object.hash(latitude, longitude, capturedAt);
+
+  @override
+  String toString() =>
+      'PassengerPosition($latitude, $longitude em $capturedAt)';
+}

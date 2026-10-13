@@ -1,0 +1,10 @@
+# Configuração do analisador estático, executado por `flutter analyze`.
+#
+# Lints recomendados para apps Flutter. Para suprimir um lint pontualmente,
+# prefira `// ignore: nome_do_lint` na linha, em vez de desativar a regra aqui.
+include: package:flutter_lints/flutter.yaml
+
+analyzer:
+  exclude:
+    - build/**
+    - android/**

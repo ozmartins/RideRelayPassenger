@@ -1,0 +1,55 @@
+name: passenger
+description: "Aplicativo do passageiro do protótipo de caronas P2P sobre Nostr (TCC UFSC)"
+
+# Protótipo acadêmico: não deve ser publicado no pub.dev.
+publish_to: 'none'
+
+# version: <versionName>+<versionCode> no Android.
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+  # Cliente Nostr (relays, eventos assinados, chaves). Substitui a decisão D9 de
+  # specs/001-flutter-app-base/research.md, que previa zero dependências na base.
+  dart_nostr: ^10.0.1
+  flutter_secure_storage: ^11.1.1
+  shared_preferences: ^2.5.5
+  geolocator: ^14.0.3
+  flutter_map: ^8.3.2
+  latlong2: ^0.10.1
+  # Cliente HTTP para a busca de endereço via Photon (decisão D1 de
+  # specs/005-busca-endereco-photon/research.md). Já resolvida
+  # transitivamente via dart_nostr; promovida a dependência direta.
+  http: ^1.6.0
+  open_route_service: ^1.2.9
+  sqflite: ^2.4.4
+  path: ^1.9.1
+  # Cifragem NIP-44 própria (HKDF/HMAC com crypto; ChaCha20 e secp256k1 com
+  # pointycastle). Já resolvidas transitivamente via dart_nostr; promovidas a
+  # diretas — decisão D1 de specs/022-mensagens-cifradas/research.md (Princípio III).
+  pointycastle: ^3.9.1
+  crypto: ^3.0.7
+  vector_map_tiles: ^9.0.0-beta.13
+  # Serviço em primeiro plano que hospeda a conexão com os relays com o app
+  # fechado, e notificação local de mensagem do motorista — decisão D2 de
+  # specs/026-conexao-em-segundo-plano/research.md (Princípio III), exceção da
+  # constituição 2.15.0 (Restrições de Segurança e Privacidade). Mesmas versões
+  # da feature 025 do motorista.
+  flutter_foreground_task: ^11.0.3
+  flutter_local_notifications: ^22.3.1
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  # Conjunto de lints aplicado por `flutter analyze`, ativado em analysis_options.yaml.
+  flutter_lints: ^6.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/ors_api_key.txt

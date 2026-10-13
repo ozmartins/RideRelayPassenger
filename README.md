@@ -99,7 +99,7 @@ flutter test --plain-name "descarta evento com assinatura adulterada"
 ```
 
 **Nenhum teste automatizado contata relay real.** Serviços recebem armazenamento e transporte por
-injeção, e os testes usam dublês em memória (`test/support/`). É uma exigência da constituição do
+injeção, e os testes usam dublês em memória (`test/support/`). É uma regra do
 projeto: teste que depende de relay público é lento, intermitente e falha sem rede. A verificação de
 assinatura, porém, é a criptografia de verdade — dublar o verificador esvaziaria o que precisa ser
 testado.
@@ -123,7 +123,7 @@ flutter run --profile --trace-startup
 cat build/start_up_info.json
 ```
 
-`timeToFirstFrameMicros` deve ficar abaixo de 3 s. Medição de referência da feature 001:
+`timeToFirstFrameMicros` deve ficar abaixo de 3 s. Medição de referência:
 **74,5 ms** (74539 µs) no emulador `Pixel_6_API34_1` (Android 14, API 34, x86_64).
 
 ## Estrutura do projeto
@@ -152,7 +152,6 @@ lib/
 test/                  # testes, com dublês em test/support/
 tool/check_relays.dart # sonda de disponibilidade dos relays padrão
 android/               # projeto Android gerado (applicationId br.ufsc.tcc.caronas.passenger)
-specs/                 # especificações spec-kit das features
 ```
 
 Tipos de `dart_nostr` ficam confinados a `services/`: domínio e telas usam tipos próprios. Trocar de
@@ -168,13 +167,13 @@ idênticas nas duas apps, e mudar uma de um lado sem o outro é defeito:
 
 | O que | Onde, no passageiro |
 |---|---|
-| Contrato de eventos | `specs/002-nostr-relay-connection/contracts/nostr-events.md` |
+| Contrato de eventos | documento de contrato de eventos, mantido igual nas duas apps |
 | Lista padrão de relays | `lib/shared/default_relays.dart` |
 | Marcador do protótipo `tcc-ufsc-caronas` | `lib/shared/prototype_marker.dart` |
 
 ### Por que o marcador existe
 
-O evento de teste usava `kind: 1` (retirado pela emenda 18 do contrato), a nota de texto padrão do
+O evento de teste usava `kind: 1` (retirado do contrato de eventos), a nota de texto padrão do
 Nostr — aceita por qualquer relay, mas também usada por toda a rede social. Inscrever-se em `kind: 1`
 sem filtro entregava o tráfego público inteiro: medido em ~500 eventos alheios por relay no primeiro segundo. O marcador
 `["t", "tcc-ufsc-caronas"]` e o filtro `#t` na inscrição isolam o tráfego do protótipo.

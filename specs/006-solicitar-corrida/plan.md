@@ -9,7 +9,7 @@
 Acrescentar um botão "Solicitar corrida" à tela do mapa do passageiro. Ao tocar, o app valida que há
 destino escolhido (feature 005) e posição atual disponível (feature 004); se ambos estiverem
 presentes, monta e publica nos relays configurados o primeiro evento de domínio deste protótipo —
-`kind: 20001`, "Solicitação de carona" — contendo a posição atual, as coordenadas do destino e a
+`kind: 20001`, "Solicitação de corrida" — contendo a posição atual, as coordenadas do destino e a
 forma de pagamento escolhida (dinheiro, PIX ou cartão, com "Dinheiro" pré-selecionado). O evento é
 efêmero e não criptografado: é um anúncio a qualquer motorista interessado, não uma mensagem a um
 destinatário já escolhido (justificativa completa no `spec.md`).

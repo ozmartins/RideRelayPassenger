@@ -1,4 +1,4 @@
-# Contrato: evento "Solicitação de carona" (kind 20001)
+# Contrato: evento "Solicitação de corrida" (kind 20001)
 
 O contrato de interoperabilidade é o único canônico e vive em
 `specs/002-nostr-relay-connection/contracts/nostr-events.md` (emenda 04, seção *Conteúdo do kind

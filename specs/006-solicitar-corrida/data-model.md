@@ -64,7 +64,7 @@ mesmo texto de exibição mas coordenadas diferentes (endereços homônimos, já
 `id` de `AddressSuggestion` na feature 005) deixam de comparar como iguais, o que é mais correto: elas
 representam destinos diferentes.
 
-## Evento Nostr "Solicitação de carona" (contrato — ver `contracts/`)
+## Evento Nostr "Solicitação de corrida" (contrato — ver `contracts/`)
 
 Não é um tipo Dart novo além dos acima; é a serialização de `RideRequest` + `Identity` no envelope
 NIP-01 padrão, montada em `EventFeed.publishRideRequest` (D6 de `research.md`) via

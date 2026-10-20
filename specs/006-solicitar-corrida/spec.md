@@ -143,14 +143,14 @@ já usada na tela.
   pré-selecionada por padrão ao abrir a tela, e o passageiro MUST poder
   trocá-la livremente antes de solicitar a corrida.
 - **FR-006**: Quando destino e posição atual estiverem disponíveis, o
-  sistema MUST montar um evento de solicitação de carona contendo: as
+  sistema MUST montar um evento de solicitação de corrida contendo: as
   coordenadas atuais do passageiro, as coordenadas do destino escolhido e a
   forma de pagamento selecionada.
-- **FR-007**: O evento de solicitação de carona MUST seguir o envelope
+- **FR-007**: O evento de solicitação de corrida MUST seguir o envelope
   padrão do protocolo Nostr (NIP-01): `id`, `pubkey`, `created_at`, `kind`,
   `tags`, `content` e `sig`, e MUST ser adicionado ao contrato de eventos
   do protótipo (`specs/002-nostr-relay-connection/contracts/nostr-events.md`)
-  como o kind "Solicitação de carona" hoje listado como *futuro*, replicado
+  como o kind "Solicitação de corrida" hoje listado como *futuro*, replicado
   de forma idêntica na app do motorista na mesma alteração (Princípio IV da
   constituição).
 - **FR-008**: O sistema MUST usar a identidade Nostr local do passageiro
@@ -161,14 +161,14 @@ já usada na tela.
 - **FR-010**: O sistema MUST tratar falha ao montar ou publicar o evento
   (ex.: identidade indisponível, todos os relays desconectados) mostrando
   uma mensagem de erro ao passageiro, sem encerrar o aplicativo.
-- **FR-011**: O sistema MUST publicar o evento de solicitação de carona nos
+- **FR-011**: O sistema MUST publicar o evento de solicitação de corrida nos
   relays configurados, reaproveitando o `RelayService` já usado pela app
   para publicação (mesmo padrão de conectividade validado na feature 002),
   e não apenas construí-lo em memória.
 
 ### Key Entities
 
-- **RideRequest (Solicitação de carona)**: representa a intenção do
+- **RideRequest (Solicitação de corrida)**: representa a intenção do
   passageiro de contratar uma corrida a partir da posição atual até o
   destino escolhido, com a forma de pagamento desejada. Vida útil limitada
   ao instante da montagem/publicação do evento — não é uma entidade
@@ -190,7 +190,7 @@ já usada na tela.
 - **SC-003**: 100% das tentativas de solicitar corrida sem posição atual
   disponível são bloqueadas antes de qualquer publicação em relay, com uma
   mensagem explicando o motivo.
-- **SC-004**: O evento de solicitação de carona publicado por esta feature é
+- **SC-004**: O evento de solicitação de corrida publicado por esta feature é
   reconhecido como válido (assinatura verificada, campos legíveis) por
   qualquer cliente Nostr compatível com NIP-01, sem depender de nenhuma
   extensão proprietária de formato.
@@ -200,7 +200,7 @@ já usada na tela.
 - A escolha da forma de pagamento é feita na própria tela do mapa, junto do
   botão "Solicitar corrida" — não é uma tela separada, para manter o fluxo
   em uma única interação (SC-001).
-- Esta feature publica o evento de solicitação de carona nos relays
+- Esta feature publica o evento de solicitação de corrida nos relays
   configurados (FR-011); a app do motorista consumir e reagir a esse evento
   é trabalho de uma feature futura, fora de escopo aqui.
 - O destino usado é sempre o último `DestinationAddress` selecionado na
@@ -224,7 +224,7 @@ desejado e a forma de pagamento. A constituição exige que qualquer dado
 pessoal trafegando sem criptografia entre pares seja justificado por escrito
 na especificação — segue a justificativa:
 
-- Uma solicitação de carona é, por natureza, um **anúncio** dirigido a
+- Uma solicitação de corrida é, por natureza, um **anúncio** dirigido a
   qualquer motorista interessado, não uma mensagem a um destinatário
   específico — o passageiro ainda não escolheu motorista nenhum quando
   solicita. Restringir o alcance exigiria uma forma de descoberta de
@@ -244,7 +244,7 @@ na especificação — segue a justificativa:
 - Risco aceito e registrado: qualquer pessoa com acesso ao relay pode
   observar de forma permanente e mundial o histórico de origem/destino/forma
   de pagamento de cada solicitação. Isso é consistente com o objetivo do
-  TCC — avaliar a viabilidade do Nostr como transporte P2P para caronas,
+  TCC — avaliar a viabilidade do Nostr como transporte P2P para corridas,
   incluindo suas limitações de privacidade — e não com um produto pronto
   para uso real; mitigar esse risco (ex.: geohash truncado, criptografia
   endereçada a um motorista específico) é trabalho futuro, fora de escopo

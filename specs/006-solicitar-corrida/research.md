@@ -1,12 +1,12 @@
 # Phase 0 — Research: Solicitar corrida
 
-## D1 — Kind do evento de solicitação de carona (atende FR-006, FR-007)
+## D1 — Kind do evento de solicitação de corrida (atende FR-006, FR-007)
 
-**Decision**: usar `kind: 20001` ("Solicitação de carona"), na faixa de eventos efêmeros do NIP-01
+**Decision**: usar `kind: 20001` ("Solicitação de corrida"), na faixa de eventos efêmeros do NIP-01
 (20000–29999) — relays não retêm nem reenviam esse kind ao estabelecer uma inscrição futura.
 
 **Contexto da decisão**: a tabela de kinds do contrato (`specs/002-nostr-relay-connection/contracts/nostr-events.md`)
-já reserva "Solicitação de carona" como *futura*, sem número. Um número precisa existir para
+já reserva "Solicitação de corrida" como *futura*, sem número. Um número precisa existir para
 implementar e testar. `kind: 1` (usado pelo evento de teste) é proibido para eventos de domínio pelo
 próprio contrato — poluiria e seria poluído pelo tráfego social geral da rede.
 
@@ -14,7 +14,7 @@ próprio contrato — poluiria e seria poluído pelo tráfego social geral da re
 
 | Opção | Observação |
 |-------|------------|
-| `20001`, efêmero (escolhida) | Uma solicitação de carona é, por natureza, um pedido momentâneo: se nenhum motorista estiver ouvindo no instante da publicação, reter o evento no relay para entrega tardia não corresponde ao domínio (o passageiro precisa de uma corrida agora, não daqui a horas). A faixa efêmera do NIP-01 (20000–29999) expressa isso sem exigir nenhuma lógica própria do app — o relay descarta após repassar aos ouvintes conectados. |
+| `20001`, efêmero (escolhida) | Uma solicitação de corrida é, por natureza, um pedido momentâneo: se nenhum motorista estiver ouvindo no instante da publicação, reter o evento no relay para entrega tardia não corresponde ao domínio (o passageiro precisa de uma corrida agora, não daqui a horas). A faixa efêmera do NIP-01 (20000–29999) expressa isso sem exigir nenhuma lógica própria do app — o relay descarta após repassar aos ouvintes conectados. |
 | Evento regular (kind na faixa 1000–9999) | Persistiria no relay e seria devolvido a inscrições futuras (sujeito ao `limit`/`since` de quem se inscreve), fazendo motoristas verem solicitações antigas e já resolvidas como se fossem novas — exigiria um mecanismo de expiração/cancelamento que esta feature não implementa (fora de escopo: a app do motorista consumir o evento é trabalho futuro). |
 | Evento substituível parametrizado (kind 30000–39999, com tag `d`) | Faria sentido se o passageiro tivesse no máximo uma solicitação "vigente" que atualiza a anterior — mas nada nesta feature define o que é "a mesma" solicitação nem uma tela para o passageiro acompanhar/cancelar; introduzir isso sem consumidor descumpriria o Princípio V. |
 
@@ -31,7 +31,7 @@ próprio contrato — poluiria e seria poluído pelo tráfego social geral da re
 (`double`), sem truncamento de precisão.
 
 **Contexto da decisão**: o NIP-01 trata `content` como texto livre, com a semântica definida pelo
-`kind`. Sem convenção comunitária estabelecida para "solicitação de carona" (ao contrário de, por
+`kind`. Sem convenção comunitária estabelecida para "solicitação de corrida" (ao contrário de, por
 exemplo, `kind: 0` para metadados de perfil), a estrutura é definida por este contrato.
 
 ### Alternativas avaliadas

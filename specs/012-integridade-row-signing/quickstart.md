@@ -2,7 +2,7 @@
 
 Guia de validação manual desta feature, em `Prototipo/passenger/`. Pressupõe acesso ao arquivo do
 banco `ride_ratings.db` do aparelho/emulador (via `adb shell run-as
-br.ufsc.tcc.caronas.passenger` + `sqlite3`, ou extraindo o arquivo) para inspecionar/alterar linhas
+br.ufsc.tcc.corridas.passenger` + `sqlite3`, ou extraindo o arquivo) para inspecionar/alterar linhas
 diretamente, simulando uma adulteração fora do app.
 
 ## Cenários de validação (referem os FR/SC de `spec.md`)

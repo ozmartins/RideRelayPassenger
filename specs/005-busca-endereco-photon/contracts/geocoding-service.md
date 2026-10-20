@@ -37,7 +37,7 @@ Chama `GET https://photon.komoot.io/api/` com query string:
 Nenhum outro parâmetro é enviado — em particular, nenhum `lat`/`lon`/posição do usuário (exceção da
 constituição 2.2.0 exige ausência de identificador do usuário na chamada).
 
-**Cabeçalho obrigatório**: `User-Agent: CaronasPassageiro/1.0 (br.ufsc.tcc.caronas.passenger;
+**Cabeçalho obrigatório**: `User-Agent: CorridasPassageiro/1.0 (br.ufsc.tcc.corridas.passenger;
 academic prototype, UFSC)`, em ASCII puro — um valor com acentos (ex.: "protótipo acadêmico") é
 rejeitado pelo próprio `package:http` com `FormatException` antes de qualquer requisição sair (D4 de
 `research.md`). A Photon pública responde HTTP 403 ao `User-Agent` padrão do `package:http` — sem

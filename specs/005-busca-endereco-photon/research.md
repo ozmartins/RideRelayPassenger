@@ -120,7 +120,7 @@ português (`"...protótipo acadêmico TCC UFSC)"`), falhou de um jeito diferent
 `package:http` rejeita o valor com `FormatException: Invalid HTTP header field value`, porque
 cabeçalhos HTTP não aceitam caracteres fora de ASCII/latin-1 sem *encoding* — o erro nem chega a sair
 para a rede. A `PhotonGeocodingService` passa a enviar
-`User-Agent: CaronasPassageiro/1.0 (br.ufsc.tcc.caronas.passenger; academic prototype, UFSC)`, em
+`User-Agent: CorridasPassageiro/1.0 (br.ufsc.tcc.corridas.passenger; academic prototype, UFSC)`, em
 inglês simples e ASCII puro — identifica o aplicativo, sem incluir `pubkey`, nome de exibição nem
 posição (continua dentro da exceção da constituição 2.2.0).
 

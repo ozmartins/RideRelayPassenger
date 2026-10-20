@@ -13,7 +13,7 @@
 ### Session 2026-09-15
 
 - Q: Qual o escopo de plataformas que o app base deve suportar/validar nesta etapa? → A: Android apenas
-- Q: Qual identificador de aplicativo e nome de exibição usar para o app do passageiro? → A: `br.ufsc.tcc.caronas.passenger`, nome de exibição "Caronas Passageiro" (identificador já reservado pela feature equivalente do motorista)
+- Q: Qual identificador de aplicativo e nome de exibição usar para o app do passageiro? → A: `br.ufsc.tcc.corridas.passenger`, nome de exibição "Corridas Passageiro" (identificador já reservado pela feature equivalente do motorista)
 
 ## User Scenarios & Testing *(mandatory)*
 
@@ -21,10 +21,10 @@
 
 Como pessoa que instalou o aplicativo do passageiro no celular, quero abrir o app e ver uma tela
 inicial estável e identificada, para confirmar que o aplicativo está instalado e funcionando antes
-de qualquer funcionalidade de caronas existir.
+de qualquer funcionalidade de corridas existir.
 
 **Why this priority**: É o esqueleto sobre o qual todas as demais funcionalidades (autenticação por
-chave, publicação e leitura de eventos em relays Nostr, busca de caronas) serão construídas. Sem uma
+chave, publicação e leitura de eventos em relays Nostr, busca de corridas) serão construídas. Sem uma
 aplicação que compile, instale e abra, nenhuma outra história pode ser desenvolvida ou demonstrada.
 
 **Independent Test**: Instalar o pacote gerado em um dispositivo/emulador, tocar no ícone e verificar
@@ -38,9 +38,9 @@ operacional e pronta para receber as próximas features.
 2. **Given** o aplicativo aberto na tela inicial, **When** o usuário envia o app para segundo plano e
    retorna a ele, **Then** a tela inicial continua exibida e responsiva.
 3. **Given** o aplicativo aberto, **When** o usuário observa a tela inicial, **Then** o nome
-   "Caronas Passageiro" está visível, identificando de qual das duas aplicações do protótipo se trata.
+   "Corridas Passageiro" está visível, identificando de qual das duas aplicações do protótipo se trata.
 4. **Given** o aplicativo instalado, **When** o usuário procura o app na gaveta de aplicativos do
-   sistema, **Then** ele aparece com o nome de exibição "Caronas Passageiro".
+   sistema, **Then** ele aparece com o nome de exibição "Corridas Passageiro".
 
 ---
 
@@ -69,7 +69,7 @@ obter o aplicativo rodando em um emulador.
 ### User Story 3 - Base preparada para as próximas funcionalidades (Priority: P3)
 
 Como autor do TCC, quero que o projeto base já esteja organizado em uma estrutura de pastas explícita
-e com uma suíte de testes executável, para que as funcionalidades de caronas via Nostr sejam
+e com uma suíte de testes executável, para que as funcionalidades de corridas via Nostr sejam
 adicionadas sem reorganizar o projeto depois.
 
 **Why this priority**: É investimento em manutenibilidade. O app funciona sem isso, mas a ausência
@@ -119,8 +119,8 @@ testes roda e passa, mesmo contendo apenas um teste de fumaça da tela inicial.
   separe, no mínimo, ponto de entrada da aplicação, telas/interface e código compartilhado.
 - **FR-009**: Os comandos de execução, verificação estática e teste MUST estar documentados no
   repositório, incluindo como executar um único teste.
-- **FR-010**: O aplicativo MUST ser identificado pelo nome de exibição "Caronas Passageiro" e pelo
-  identificador de aplicativo `br.ufsc.tcc.caronas.passenger`, distinto de `br.ufsc.tcc.caronas.driver`
+- **FR-010**: O aplicativo MUST ser identificado pelo nome de exibição "Corridas Passageiro" e pelo
+  identificador de aplicativo `br.ufsc.tcc.corridas.passenger`, distinto de `br.ufsc.tcc.corridas.driver`
   usado pelo aplicativo do motorista, de modo que ambos possam coexistir no mesmo dispositivo.
 - **FR-011**: O projeto MUST NOT introduzir, nesta feature, qualquer dependência de rede, de
   protocolo Nostr, de criptografia ou de backend — a base é deliberadamente inerte.
@@ -162,7 +162,7 @@ Não se aplica: esta feature não introduz dados persistidos nem entidades de do
   não um diretório de projeto sem código.
 - O aplicativo do passageiro não possui backend próprio e, no futuro, comunicará exclusivamente por
   eventos assinados em relays Nostr; nada disso é implementado nesta feature.
-- O namespace `br.ufsc.tcc.caronas` é compartilhado pelas duas apps do protótipo; o sufixo
+- O namespace `br.ufsc.tcc.corridas` é compartilhado pelas duas apps do protótipo; o sufixo
   `.passenger` foi reservado para esta app pela feature equivalente do motorista
   (`Prototipo/driver/specs/001-flutter-app-base/`).
 - Idioma de interface: português do Brasil, coerente com o restante do trabalho.

@@ -33,7 +33,7 @@ gerado em `android/`. Conforme a Structure Decision de `plan.md`.
 
 **Purpose**: gerar o esqueleto do projeto Flutter sobre o diretório existente do spec-kit.
 
-- [X] T001 Gerar o projeto Flutter sobre o diretório existente executando, em `Prototipo/passenger/`: `flutter create . --project-name passenger --org br.ufsc.tcc.caronas --platforms android --description "Aplicativo do passageiro do protótipo de caronas P2P sobre Nostr (TCC UFSC)"` — cria `lib/main.dart`, `test/`, `android/`, `pubspec.yaml`, `analysis_options.yaml`, `.gitignore` (decisões D2, D3, D4, D5 de `specs/001-flutter-app-base/research.md`)
+- [X] T001 Gerar o projeto Flutter sobre o diretório existente executando, em `Prototipo/passenger/`: `flutter create . --project-name passenger --org br.ufsc.tcc.corridas --platforms android --description "Aplicativo do passageiro do protótipo de corridas P2P sobre Nostr (TCC UFSC)"` — cria `lib/main.dart`, `test/`, `android/`, `pubspec.yaml`, `analysis_options.yaml`, `.gitignore` (decisões D2, D3, D4, D5 de `specs/001-flutter-app-base/research.md`)
 - [X] T002 Verificar com `git status` na raiz do repositório que o scaffold não alterou nem removeu nada em `Prototipo/passenger/.specify/`, `Prototipo/passenger/.claude/` ou `Prototipo/passenger/specs/`; reverter seletivamente se tiver alterado (mitigação do risco registrado em D5)
 - [X] T003 Confirmar que `Prototipo/passenger/` não contém `ios/`, `web/`, `linux/`, `macos/` nem `windows/`; remover se o scaffold tiver gerado algum (FR-005)
 - [X] T004 Baixar as dependências executando `flutter pub get` em `Prototipo/passenger/` e confirmar que conclui sem erro
@@ -46,13 +46,13 @@ gerado em `android/`. Conforme a Structure Decision de `plan.md`.
 
 **Purpose**: identidade do aplicativo e gate de análise estática — pré-requisitos de todas as stories.
 
-- [X] T005 Verificar em `Prototipo/passenger/android/app/build.gradle.kts` que `namespace` e `applicationId` são `br.ufsc.tcc.caronas.passenger`; corrigir se o scaffold divergir (FR-010)
-- [X] T006 Definir o nome de exibição do aplicativo alterando `android:label` para `Caronas Passageiro` em `Prototipo/passenger/android/app/src/main/AndroidManifest.xml` (FR-010, US1 cenário 4)
+- [X] T005 Verificar em `Prototipo/passenger/android/app/build.gradle.kts` que `namespace` e `applicationId` são `br.ufsc.tcc.corridas.passenger`; corrigir se o scaffold divergir (FR-010)
+- [X] T006 Definir o nome de exibição do aplicativo alterando `android:label` para `Corridas Passageiro` em `Prototipo/passenger/android/app/src/main/AndroidManifest.xml` (FR-010, US1 cenário 4)
 - [X] T007 Conferir em `Prototipo/passenger/android/app/src/main/AndroidManifest.xml` que nenhuma permissão além do padrão do scaffold é declarada — em especial nenhuma de rede ou localização (FR-004, FR-011)
 - [X] T008 Conferir em `Prototipo/passenger/pubspec.yaml` que o nome do pacote é `passenger` e que não há nenhuma dependência de terceiros além de `cupertino_icons`, `flutter_test` e `flutter_lints` (FR-011, decisão D9)
 - [X] T009 Confirmar que `Prototipo/passenger/analysis_options.yaml` inclui `package:flutter_lints/flutter.yaml` e executar `flutter analyze` em `Prototipo/passenger/` como baseline (FR-007)
 
-**Checkpoint**: app identificado como "Caronas Passageiro" / `br.ufsc.tcc.caronas.passenger`, sem permissões extras, sem dependências de terceiros, análise estática ativa.
+**Checkpoint**: app identificado como "Corridas Passageiro" / `br.ufsc.tcc.corridas.passenger`, sem permissões extras, sem dependências de terceiros, análise estática ativa.
 
 ---
 
@@ -60,16 +60,16 @@ gerado em `android/`. Conforme a Structure Decision de `plan.md`.
 
 **Goal**: o app compila, instala e abre em um dispositivo Android exibindo uma tela inicial vazia identificada como o app do passageiro.
 
-**Independent Test**: instalar em emulador/aparelho e verificar que abre sem erros exibindo "Caronas Passageiro", sem contador e sem diálogo de permissão.
+**Independent Test**: instalar em emulador/aparelho e verificar que abre sem erros exibindo "Corridas Passageiro", sem contador e sem diálogo de permissão.
 
-- [X] T010 [US1] Criar `Prototipo/passenger/lib/shared/app_info.dart` com as constantes de identidade do app: nome de exibição `'Caronas Passageiro'` e a mensagem de placeholder da tela inicial (FR-008, data-model.md)
+- [X] T010 [US1] Criar `Prototipo/passenger/lib/shared/app_info.dart` com as constantes de identidade do app: nome de exibição `'Corridas Passageiro'` e a mensagem de placeholder da tela inicial (FR-008, data-model.md)
 - [X] T011 [US1] Criar `Prototipo/passenger/lib/screens/home_screen.dart` com um `StatelessWidget` `HomeScreen`: `Scaffold` com `AppBar` exibindo o nome de exibição vindo de `app_info.dart` e corpo centralizado com a mensagem de placeholder; sem `FloatingActionButton`, sem `setState`, sem contador (FR-002, FR-003, decisão D6)
-- [X] T012 [US1] Reescrever `Prototipo/passenger/lib/main.dart` removendo todo o boilerplate de contador do template: `main()` chamando `runApp`, widget raiz `CaronasPassengerApp` com `MaterialApp` usando `title` de `app_info.dart`, `themeMode: ThemeMode.system` e `home: const HomeScreen()` (FR-002, FR-003, edge case de tema escuro)
-- [X] T013 [US1] Substituir o teste gerado `Prototipo/passenger/test/widget_test.dart` por `Prototipo/passenger/test/home_screen_test.dart`, com um teste nomeado "exibe o título da tela inicial" que monta `CaronasPassengerApp`, verifica que "Caronas Passageiro" é exibido e que não existe nenhum widget de contador remanescente do template; apagar `widget_test.dart` (FR-006, decisão D8)
+- [X] T012 [US1] Reescrever `Prototipo/passenger/lib/main.dart` removendo todo o boilerplate de contador do template: `main()` chamando `runApp`, widget raiz `CorridasPassengerApp` com `MaterialApp` usando `title` de `app_info.dart`, `themeMode: ThemeMode.system` e `home: const HomeScreen()` (FR-002, FR-003, edge case de tema escuro)
+- [X] T013 [US1] Substituir o teste gerado `Prototipo/passenger/test/widget_test.dart` por `Prototipo/passenger/test/home_screen_test.dart`, com um teste nomeado "exibe o título da tela inicial" que monta `CorridasPassengerApp`, verifica que "Corridas Passageiro" é exibido e que não existe nenhum widget de contador remanescente do template; apagar `widget_test.dart` (FR-006, decisão D8)
 - [X] T014 [US1] Executar `flutter analyze` e `flutter test` em `Prototipo/passenger/` e corrigir o que acusarem, até zero violações e 100% dos testes passando (SC-003)
-- [X] T015 [US1] Executar `flutter run` em `Prototipo/passenger/` com um dispositivo/emulador Android e confirmar: o app abre sem erro, exibe "Caronas Passageiro", não há contador nem botão flutuante (US1 cenário 1, SC-005)
+- [X] T015 [US1] Executar `flutter run` em `Prototipo/passenger/` com um dispositivo/emulador Android e confirmar: o app abre sem erro, exibe "Corridas Passageiro", não há contador nem botão flutuante (US1 cenário 1, SC-005)
 - [X] T015a [US1] Medir o cold start com `flutter run --profile --trace-startup` em `Prototipo/passenger/` e confirmar em `build/start_up_info.json` que `timeToFirstFrameMicros` fica abaixo de 3 s; registrar o valor medido no `README.md` junto da identificação do aparelho usado (SC-002)
-- [X] T016 [US1] Com o app rodando, validar os cenários restantes da US1: enviar para segundo plano e retornar mantém a tela responsiva (cenário 2); o app aparece na gaveta de aplicativos como "Caronas Passageiro" (cenário 4)
+- [X] T016 [US1] Com o app rodando, validar os cenários restantes da US1: enviar para segundo plano e retornar mantém a tela responsiva (cenário 2); o app aparece na gaveta de aplicativos como "Corridas Passageiro" (cenário 4)
 - [X] T017 [US1] Validar os edge cases de runtime com o app instalado: abrir com Wi-Fi e dados móveis desligados (FR-004); alternar o tema do sistema entre claro e escuro e confirmar legibilidade; girar o dispositivo e confirmar que o conteúdo não se sobrepõe
 
 **Checkpoint**: MVP entregue — o app do passageiro existe, roda e está pronto para receber as features de Nostr.
@@ -84,7 +84,7 @@ gerado em `android/`. Conforme a Structure Decision de `plan.md`.
 
 - [X] T018 [US2] Criar `Prototipo/passenger/README.md` documentando: pré-requisitos (Flutter 3.47.4 / Dart 3.13.3), `flutter doctor` como primeiro passo com a ressalva de que só o grupo "Android toolchain" precisa estar ✓, e os comandos `flutter pub get`, `flutter run`, `flutter analyze`, `flutter test`, `flutter test test/home_screen_test.dart` e `flutter test --plain-name "<nome>"` para rodar um único teste (FR-009, SC-001, decisões D1 e D10)
 - [X] T019 [US2] Documentar no `README.md` o propósito de cada diretório de `lib/` (`main.dart` como ponto de entrada, `screens/` para telas, `shared/` para código compartilhado), para que a estrutura exigida por FR-008 seja descobrível (US3 cenário 2)
-- [X] T020 [US2] Registrar no `README.md` a identidade do app ("Caronas Passageiro" / `br.ufsc.tcc.caronas.passenger`) e a nota de que a app irmã do motorista usa `br.ufsc.tcc.caronas.driver`, podendo as duas coexistir no mesmo aparelho (FR-010, data-model.md)
+- [X] T020 [US2] Registrar no `README.md` a identidade do app ("Corridas Passageiro" / `br.ufsc.tcc.corridas.passenger`) e a nota de que a app irmã do motorista usa `br.ufsc.tcc.corridas.driver`, podendo as duas coexistir no mesmo aparelho (FR-010, data-model.md)
 - [X] T021 [US2] Validar o README executando seus comandos do zero em `Prototipo/passenger/` (`flutter pub get`, `flutter analyze`, `flutter test`) e confirmar que todos funcionam exatamente como documentados (US2 cenários 1 e 2)
 
 **Checkpoint**: projeto reprodutível por terceiros a partir da documentação.

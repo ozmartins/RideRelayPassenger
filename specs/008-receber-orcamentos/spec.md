@@ -98,7 +98,7 @@ motorista dele, e que uma recusa (`kind: 20004`) é publicada para cada um dos o
 
 ### Functional Requirements
 
-- **FR-001**: O sistema MUST se inscrever em `kind: 20002` (Orçamento de carona).
+- **FR-001**: O sistema MUST se inscrever em `kind: 20002` (Orçamento de corrida).
 - **FR-002**: Ao receber um orçamento válido (assinatura verificada, marcador presente) que
   referencia a solicitação de corrida atualmente ativa, o sistema MUST persistir esse orçamento em
   armazenamento que sobrevive a reiniciar o app.

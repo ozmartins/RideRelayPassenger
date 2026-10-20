@@ -47,7 +47,7 @@ class PhotonGeocodingService implements GeocodingService {
   /// verificado em 2026-09-18 (D4 de `research.md`). Um `User-Agent` que
   /// identifique o aplicativo evita o bloqueio.
   static const _userAgent =
-      'CaronasPassageiro/1.0 (br.ufsc.tcc.caronas.passenger; academic '
+      'CorridasPassageiro/1.0 (br.ufsc.tcc.corridas.passenger; academic '
       'prototype, UFSC)';
 
   final http.Client _client;

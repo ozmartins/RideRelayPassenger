@@ -19,7 +19,7 @@ class IdentityScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TelaDeConteudo(
-      tituloBarra: 'Caronas Passageiro',
+      tituloBarra: 'Corridas Passageiro',
       titulo: 'Minha identidade',
       child: ListView(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),

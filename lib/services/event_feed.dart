@@ -13,14 +13,14 @@ import 'package:passenger/services/relay_hub.dart';
 import 'package:passenger/services/subscription_request.dart';
 import 'package:passenger/shared/prototype_marker.dart';
 
-/// `kind` da "Solicitação de carona" (D1 de
+/// `kind` da "Solicitação de corrida" (D1 de
 /// `specs/006-solicitar-corrida/research.md`; contrato: emenda 04 de
 /// `specs/002-nostr-relay-connection/contracts/nostr-events.md`). Faixa
 /// efêmera do NIP-01 (20000–29999): relays não retêm nem reenviam a
 /// inscrições futuras.
 const rideRequestKind = 20001;
 
-/// `kind` do "Orçamento de carona" (emendas 05/06 do contrato) — recebido
+/// `kind` do "Orçamento de corrida" (emendas 05/06 do contrato) — recebido
 /// pelo passageiro (feature 008 dele).
 const rideQuoteKind = 20002;
 
@@ -190,7 +190,7 @@ class EventFeed {
   /// descarta essa opção pelo mesmo motivo.
   String subscriptionRequest() => buildSubscriptionRequest(acceptedKinds);
 
-  /// Publica uma solicitação de carona (`kind: 20001`) assinada por
+  /// Publica uma solicitação de corrida (`kind: 20001`) assinada por
   /// [identity], reportando o desfecho por relay — mesmo mecanismo das
   /// demais publicações (D6 de `specs/006-solicitar-corrida/research.md`).
   ///

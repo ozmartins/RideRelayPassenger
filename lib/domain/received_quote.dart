@@ -2,7 +2,7 @@ import 'dart:convert';
 
 import 'nostr_event.dart';
 
-/// Orçamento de carona recebido de um motorista, já verificado e
+/// Orçamento de corrida recebido de um motorista, já verificado e
 /// deduplicado pelo `EventFeed` (regras de recepção do contrato) antes de
 /// chegar aqui.
 ///

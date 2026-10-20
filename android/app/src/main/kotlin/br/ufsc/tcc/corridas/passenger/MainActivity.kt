@@ -1,4 +1,4 @@
-package br.ufsc.tcc.caronas.passenger
+package br.ufsc.tcc.corridas.passenger
 
 import io.flutter.embedding.android.FlutterActivity
 

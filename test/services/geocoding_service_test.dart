@@ -152,7 +152,7 @@ void main() {
       // HTTP 403 (D4 de research.md) — verificado contra a rede real.
       expect(
         capturada!.headers['User-Agent'],
-        contains('CaronasPassageiro'),
+        contains('CorridasPassageiro'),
       );
     });
 

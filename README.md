@@ -11,11 +11,11 @@ de teste; os formatos de domínio de corridas (oferta, solicitação, mensagem) 
 | | |
 |---|---|
 | Nome de exibição | `Corridas Passageiro` |
-| Identificador de aplicativo | `br.ufsc.tcc.caronas.passenger` |
+| Identificador de aplicativo | `br.ufsc.tcc.corridas.passenger` |
 | Plataforma | Android (iOS, web e desktop fora de escopo) |
-| App irmã | `Corridas Motorista` — `br.ufsc.tcc.caronas.driver`, em `../driver` |
+| App irmã | `Corridas Motorista` — `br.ufsc.tcc.corridas.driver`, em `../driver` |
 
-As duas apps usam o namespace comum `br.ufsc.tcc.caronas` com sufixos distintos, de modo que **podem
+As duas apps usam o namespace comum `br.ufsc.tcc.corridas` com sufixos distintos, de modo que **podem
 ser instaladas simultaneamente no mesmo aparelho** — é assim que a interoperabilidade é validada.
 
 ## O aplicativo
@@ -151,7 +151,7 @@ lib/
 
 test/                  # testes, com dublês em test/support/
 tool/check_relays.dart # sonda de disponibilidade dos relays padrão
-android/               # projeto Android gerado (applicationId br.ufsc.tcc.caronas.passenger)
+android/               # projeto Android gerado (applicationId br.ufsc.tcc.corridas.passenger)
 ```
 
 Tipos de `dart_nostr` ficam confinados a `services/`: domínio e telas usam tipos próprios. Trocar de

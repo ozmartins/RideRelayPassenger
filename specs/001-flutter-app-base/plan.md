@@ -6,9 +6,9 @@
 
 ## Summary
 
-Criar o esqueleto executável do aplicativo do passageiro do protótipo de caronas P2P: um projeto
+Criar o esqueleto executável do aplicativo do passageiro do protótipo de corridas P2P: um projeto
 Flutter mínimo em `Prototipo/passenger`, com uma única tela inicial sem lógica de negócio, identificado
-como "Caronas Passageiro" (`br.ufsc.tcc.caronas.passenger`), rodando apenas em Android, com um teste de
+como "Corridas Passageiro" (`br.ufsc.tcc.corridas.passenger`), rodando apenas em Android, com um teste de
 widget de sanidade, análise estática limpa e um `README.md` documentando instalação, execução e testes.
 
 A abordagem é usar o scaffold oficial (`flutter create`) restrito a Android, remover o boilerplate de
@@ -87,14 +87,14 @@ o scaffold do spec-kit. O `flutter create` é aplicado **sobre esse diretório e
 ```text
 Prototipo/passenger/
 ├── lib/
-│   ├── main.dart                 # ponto de entrada + widget raiz (CaronasPassengerApp)
+│   ├── main.dart                 # ponto de entrada + widget raiz (CorridasPassengerApp)
 │   ├── screens/
 │   │   └── home_screen.dart      # tela inicial vazia (HomeScreen)
 │   └── shared/
 │       └── app_info.dart         # constantes de identidade do app (nome de exibição)
 ├── test/
 │   └── home_screen_test.dart     # teste de sanidade: a tela inicial monta e exibe o título
-├── android/                      # projeto Android gerado (applicationId br.ufsc.tcc.caronas.passenger)
+├── android/                      # projeto Android gerado (applicationId br.ufsc.tcc.corridas.passenger)
 ├── pubspec.yaml                  # nome do pacote: passenger; sem dependências de terceiros
 ├── analysis_options.yaml         # flutter_lints
 ├── README.md                     # comandos de setup, execução e teste (FR-009)

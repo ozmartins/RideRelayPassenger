@@ -272,7 +272,7 @@ reabrir o aplicativo, verificando que a lista persistiu.
   > a manter as duas apps; a constituição 2.0.0 exige replicação direta nos dois lados. A premissa
   > permanece como registro fiel das condições em que esta especificação foi escrita.
 - O evento publicado nesta etapa é um **evento de teste genérico** (`kind: 1`), não um formato de domínio
-  de caronas. Oferta, solicitação e mensagem entre pares são objeto de features posteriores.
+  de corridas. Oferta, solicitação e mensagem entre pares são objeto de features posteriores.
 - Criptografia de conteúdo entre pares está fora do escopo: os eventos desta etapa são públicos e servem
   para comprovar conectividade e interoperabilidade.
 - A validação da User Story 4 exige a app do motorista implementada; as histórias 1 a 3 são validáveis

@@ -33,11 +33,11 @@ comunicação. Por isso, onde não há motivo para divergir, o passageiro espelh
 
 ## D3 — Identificador e nome do aplicativo
 
-- **Decision**: `--org br.ufsc.tcc.caronas` + nome de projeto `passenger` → `applicationId`
-  `br.ufsc.tcc.caronas.passenger`; nome de exibição "Caronas Passageiro" em
+- **Decision**: `--org br.ufsc.tcc.corridas` + nome de projeto `passenger` → `applicationId`
+  `br.ufsc.tcc.corridas.passenger`; nome de exibição "Corridas Passageiro" em
   `android/app/src/main/AndroidManifest.xml`.
-- **Rationale**: o identificador `br.ufsc.tcc.caronas.passenger` já estava **reservado** pela feature do
-  motorista justamente para esta app. `applicationId` distinto de `br.ufsc.tcc.caronas.driver` permite
+- **Rationale**: o identificador `br.ufsc.tcc.corridas.passenger` já estava **reservado** pela feature do
+  motorista justamente para esta app. `applicationId` distinto de `br.ufsc.tcc.corridas.driver` permite
   as duas apps instaladas no mesmo aparelho, condição necessária para testar a troca de eventos Nostr
   ponta a ponta nas features futuras (FR-010). O `applicationId` é derivado automaticamente por
   `flutter create` a partir de `--org` + nome do projeto, sem edição manual.
@@ -51,7 +51,7 @@ comunicação. Por isso, onde não há motivo para divergir, o passageiro espelh
 - **Rationale**: o diretório já é `Prototipo/passenger`; `passenger` é um identificador Dart válido
   (minúsculas, sem hífen) e mantém os imports internos curtos (`package:passenger/...`). Espelha a
   decisão D4 do motorista.
-- **Alternatives considered**: `caronas_passenger` — mais descritivo, mas divergiria do nome do
+- **Alternatives considered**: `corridas_passenger` — mais descritivo, mas divergiria do nome do
   diretório e do caminho já consolidado no CLAUDE.md do repositório.
 
 ## D5 — `flutter create` sobre diretório não vazio
@@ -70,7 +70,7 @@ comunicação. Por isso, onde não há motivo para divergir, o passageiro espelh
 ## D6 — Conteúdo da tela "vazia"
 
 - **Decision**: substituir o app de contador do template por um `MaterialApp` com `title`
-  "Caronas Passageiro", `AppBar` com o mesmo título e um corpo centralizado com uma mensagem de
+  "Corridas Passageiro", `AppBar` com o mesmo título e um corpo centralizado com uma mensagem de
   placeholder identificando o app do passageiro. Sem `FloatingActionButton`, sem `setState`, sem
   contador.
 - **Rationale**: "vazio" no spec significa sem lógica de negócio (FR-002); deixar o contador gerado

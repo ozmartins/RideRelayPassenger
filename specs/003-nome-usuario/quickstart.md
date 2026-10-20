@@ -8,7 +8,7 @@ Referências: [spec.md](./spec.md) (cenários de aceitação), [data-model.md](.
 - Emulador ou aparelho Android disponível (`flutter emulators --launch Pixel_6_API34_1`, ou
   aparelho físico com depuração USB habilitada).
 - App do passageiro sem dados previamente instalados, para testar a primeira execução:
-  `adb uninstall br.ufsc.tcc.caronas.passenger` (ignorar erro se não estiver instalado), ou usar
+  `adb uninstall br.ufsc.tcc.corridas.passenger` (ignorar erro se não estiver instalado), ou usar
   um emulador limpo.
 
 ## Cenário 1 — Primeira execução pede o nome (US1)

@@ -62,13 +62,13 @@ A feature está completa quando **todos** os itens abaixo se verificam:
 | 1 | `flutter analyze` termina sem nenhuma violação | FR-007, SC-003 |
 | 2 | `flutter test` executa e 100% dos testes passam | FR-006, SC-003 |
 | 3 | `flutter run` compila, instala e abre o app no dispositivo Android sem erro | US1 cenário 1, FR-001 |
-| 4 | A tela inicial exibe o título "Caronas Passageiro" | US1 cenário 3, FR-002 |
-| 5 | Na gaveta de aplicativos, o app aparece como "Caronas Passageiro" | US1 cenário 4, FR-010 |
+| 4 | A tela inicial exibe o título "Corridas Passageiro" | US1 cenário 3, FR-002 |
+| 5 | Na gaveta de aplicativos, o app aparece como "Corridas Passageiro" | US1 cenário 4, FR-010 |
 | 6 | Não há contador, botão flutuante nem qualquer texto do template padrão na tela | FR-003, SC-005 |
 | 7 | Enviar o app para segundo plano e retornar mantém a tela inicial responsiva | US1 cenário 2 |
 | 8 | Com o Wi-Fi e os dados móveis desligados, o app abre normalmente | FR-004, edge case de rede |
 | 9 | Alternando o tema do sistema entre claro e escuro, a tela permanece legível | Edge case de tema |
-| 10 | `grep -r applicationId android/app/build.gradle.kts` mostra `br.ufsc.tcc.caronas.passenger` | FR-010 |
+| 10 | `grep -r applicationId android/app/build.gradle.kts` mostra `br.ufsc.tcc.corridas.passenger` | FR-010 |
 | 11 | Existem `lib/main.dart`, `lib/screens/` e `lib/shared/`, cada um com propósito documentado no README | FR-008 |
 | 12 | O README documenta setup, execução, análise, suíte de testes e como rodar um único teste | FR-009 |
 | 13 | `ios/`, `web/`, `linux/`, `macos/` e `windows/` **não** existem no projeto | FR-005 |
@@ -78,6 +78,6 @@ A feature está completa quando **todos** os itens abaixo se verificam:
 ## Validação de coexistência com a app do motorista
 
 Quando a app do motorista também estiver construída, instale as duas no mesmo dispositivo e confirme
-que aparecem como dois ícones distintos ("Caronas Motorista" e "Caronas Passageiro") e que instalar uma
+que aparecem como dois ícones distintos ("Corridas Motorista" e "Corridas Passageiro") e que instalar uma
 não substitui a outra. Isso valida os `applicationId` irmãos e é pré-requisito dos testes ponta a ponta
 das features de comunicação via Nostr.

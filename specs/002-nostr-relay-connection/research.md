@@ -73,7 +73,7 @@ consumiria o tempo do TCC sem contribuir para a pergunta de pesquisa.
 - **Rationale**: o Princípio I da constituição é NÃO NEGOCIÁVEL e exige armazenamento protegido do
   sistema operacional. Preferências simples guardam texto legível e não atendem.
 - **Nota própria do passageiro**: cada app tem seu próprio armazenamento seguro, isolado por
-  `applicationId` (`br.ufsc.tcc.caronas.passenger` vs `.driver`). É isso que garante identidades
+  `applicationId` (`br.ufsc.tcc.corridas.passenger` vs `.driver`). É isso que garante identidades
   distintas com as duas apps no mesmo aparelho — verificável por US2 cenário 5 e SC-010.
 - **Alternatives considered**: `shared_preferences` para tudo — viola o Princípio I; arquivo cifrado
   próprio — reimplementaria mal o que o Keystore já faz.
@@ -153,7 +153,7 @@ descartável e o recupera **por uma conexão separada** — a mesma mecânica da
 **Achado para o TCC**: dos 6 relays públicos sondados, 1 não respondeu e 1 — justamente o mais
 difundido — foi intermitente entre duas execuções separadas por minutos. A volatilidade da
 infraestrutura pública é, por si só, um resultado relevante sobre a viabilidade de sustentar um
-aplicativo de caronas sobre relays abertos de terceiros, e sustenta diretamente o requisito FR-003
+aplicativo de corridas sobre relays abertos de terceiros, e sustenta diretamente o requisito FR-003
 (falha de um relay não pode derrubar os demais) e o SC-003.
 
 **Observação posterior — `nos.lol` (16/09/2026, durante a validação cross-app)**: mesmo tendo passado

@@ -19,7 +19,7 @@ chaves assimétricas)."
   constituição 2.11.0; esta (passageiro) é a contrapartida: replica o contrato, cifra o que o
   passageiro publica e decifra o que recebe. Formato, kinds, marcador `{}` e exceção do `20001` são
   os de lá e **não** são redefinidos aqui.
-- Q: O `20001` (Solicitação de carona) é anúncio a qualquer motorista, sem destinatário. → A:
+- Q: O `20001` (Solicitação de corrida) é anúncio a qualquer motorista, sem destinatário. → A:
   **exceção deliberada**: o passageiro continua o publicando só assinado, em claro; posição e
   destino ficam públicos, justificado na emenda e na constituição.
 - Q: Qual padrão de cifragem? → A: NIP-44 v2, entre a chave privada do remetente e a pública do

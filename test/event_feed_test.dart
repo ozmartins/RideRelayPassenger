@@ -65,7 +65,7 @@ class Cenario {
   }
 }
 
-/// Publica uma solicitação de carona qualquer: os testes de publicação só
+/// Publica uma solicitação de corrida qualquer: os testes de publicação só
 /// precisam de um evento de domínio assinado e em claro.
 Future<PublishReport> publicarTeste(EventFeed feed, Identity identity) =>
     feed.publishRideRequest(

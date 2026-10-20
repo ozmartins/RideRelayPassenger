@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Projeto
 
-App Flutter (Android apenas) do **passageiro** de um protótipo de caronas P2P sobre Nostr (TCC UFSC). Não há backend: toda comunicação com o app irmão do motorista (`../driver`) passa por relays Nostr. O README.md (em português) tem a visão do produto; documentação e comentários do código são em português do Brasil.
+App Flutter (Android apenas) do **passageiro** de um protótipo de corridas P2P sobre Nostr (TCC UFSC). Não há backend: toda comunicação com o app irmão do motorista (`../driver`) passa por relays Nostr. O README.md (em português) tem a visão do produto; documentação e comentários do código são em português do Brasil.
 
 ## Comandos
 

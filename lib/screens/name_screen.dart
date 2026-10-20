@@ -76,7 +76,7 @@ class _NameScreenState extends State<NameScreen> {
   Widget build(BuildContext context) {
     final editando = widget._editando;
     return TelaDeConteudo(
-      tituloBarra: 'Caronas Passageiro',
+      tituloBarra: 'Corridas Passageiro',
       titulo: editando ? 'Alterar nome' : 'Como podemos te chamar?',
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 24, 20, 16),

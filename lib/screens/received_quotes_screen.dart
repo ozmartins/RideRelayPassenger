@@ -34,7 +34,7 @@ class ReceivedQuotesScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return TelaDeConteudo(
-      tituloBarra: 'Caronas Passageiro',
+      tituloBarra: 'Corridas Passageiro',
       titulo: 'Orçamentos recebidos',
       child: Column(
         children: [

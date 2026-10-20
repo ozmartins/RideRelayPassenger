@@ -1,19 +1,19 @@
-# Caronas Passageiro
+# Corridas Passageiro
 
-Aplicativo do **passageiro** do protótipo de caronas P2P sobre Nostr, do TCC
-"Nostr para Mobilidade P2P: Avaliação de Viabilidade em Aplicativos de Caronas" (UFSC — Araranguá).
+Aplicativo do **passageiro** do protótipo de corridas P2P sobre Nostr, do TCC
+"Nostr para Mobilidade P2P: Avaliação de Viabilidade em Aplicativos de Corridas" (UFSC — Araranguá).
 
 O aplicativo tem uma identidade Nostr própria, conecta-se simultaneamente a vários relays públicos,
 publica e recebe eventos assinados e interopera com o aplicativo do motorista — **sem backend e sem
 que as duas apps se conheçam**: toda a comunicação passa por relays Nostr. Os eventos desta etapa são
-de teste; os formatos de domínio de caronas (oferta, solicitação, mensagem) são trabalho futuro.
+de teste; os formatos de domínio de corridas (oferta, solicitação, mensagem) são trabalho futuro.
 
 | | |
 |---|---|
-| Nome de exibição | `Caronas Passageiro` |
+| Nome de exibição | `Corridas Passageiro` |
 | Identificador de aplicativo | `br.ufsc.tcc.caronas.passenger` |
 | Plataforma | Android (iOS, web e desktop fora de escopo) |
-| App irmã | `Caronas Motorista` — `br.ufsc.tcc.caronas.driver`, em `../driver` |
+| App irmã | `Corridas Motorista` — `br.ufsc.tcc.caronas.driver`, em `../driver` |
 
 As duas apps usam o namespace comum `br.ufsc.tcc.caronas` com sufixos distintos, de modo que **podem
 ser instaladas simultaneamente no mesmo aparelho** — é assim que a interoperabilidade é validada.

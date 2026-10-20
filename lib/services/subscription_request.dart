@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:passenger/shared/prototype_marker.dart';
 
 /// Identificador da inscrição do app nos relays.
-const String eventSubscriptionId = 'caronas';
+const String eventSubscriptionId = 'corridas';
 
 /// Os `kind` que o passageiro consome (a lista da inscrição), em um arquivo
 /// sem dependências para o serviço em segundo plano poder usá-la sem importar

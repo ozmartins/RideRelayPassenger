@@ -74,9 +74,9 @@ void main() {
 
     test('subscribe, broadcast e message', () {
       final sub = _volta(
-        const ServiceSubscribe(subscriptionId: 'caronas', request: '["REQ"]'),
+        const ServiceSubscribe(subscriptionId: 'corridas', request: '["REQ"]'),
       )! as ServiceSubscribe;
-      expect(sub.subscriptionId, 'caronas');
+      expect(sub.subscriptionId, 'corridas');
       expect(sub.request, '["REQ"]');
       expect(
         (_volta(const ServiceBroadcast('["EVENT"]'))! as ServiceBroadcast).message,

@@ -49,7 +49,7 @@ void main() {
 
     test('comandos esperam o serviço responder ao hello, na ordem', () async {
       hub.attach(foreground: true);
-      hub.subscribe('caronas', '["REQ"]');
+      hub.subscribe('corridas', '["REQ"]');
       await hub.add(const Relay(url: 'wss://a'));
       await pump();
       expect(noServico.whereType<ServiceSubscribe>(), isEmpty);
@@ -132,7 +132,7 @@ void main() {
     });
 
     test('um serviço reiniciado recebe de novo as inscrições', () async {
-      hub.subscribe('caronas', '["REQ"]');
+      hub.subscribe('corridas', '["REQ"]');
       hub.attach(foreground: true);
       responder();
       await pump();
@@ -175,7 +175,7 @@ void main() {
 
     test('detach descarta a fila: serviço encerrado de propósito', () async {
       hub.attach(foreground: true);
-      hub.subscribe('caronas', '["REQ"]');
+      hub.subscribe('corridas', '["REQ"]');
       hub.detach();
       responder();
       await pump();

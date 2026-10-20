@@ -37,7 +37,7 @@ Future<void> main() async {
   await OrsApiKey.load();
   // Canal entre a interface e o serviço em segundo plano (feature 026).
   ForegroundTaskBackgroundService.initCommunicationPort();
-  runApp(const CaronasPassengerApp());
+  runApp(const CorridasPassengerApp());
 }
 
 /// Widget raiz do aplicativo do passageiro.
@@ -46,8 +46,8 @@ Future<void> main() async {
 /// de transporte de relay são escolhidas. Todo o resto do código depende dos
 /// contratos `SecureStore` e `RelayTransport`, o que permite aos testes rodar
 /// com dublês em memória (decisão D5, Princípio II da constituição).
-class CaronasPassengerApp extends StatelessWidget {
-  const CaronasPassengerApp({super.key});
+class CorridasPassengerApp extends StatelessWidget {
+  const CorridasPassengerApp({super.key});
 
   @override
   Widget build(BuildContext context) {

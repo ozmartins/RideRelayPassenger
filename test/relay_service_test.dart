@@ -117,7 +117,7 @@ void main() {
 
       transport.conexoes['wss://a.test']!.derrubar();
       await Future<void>.delayed(const Duration(milliseconds: 20));
-      transport.conexoes['wss://a.test']!.emitir('["EVENT","caronas",{}]');
+      transport.conexoes['wss://a.test']!.emitir('["EVENT","corridas",{}]');
       await pumpEventQueue();
 
       expect(
@@ -179,7 +179,7 @@ void main() {
       // O handshake termina depois da remoção.
       portao.complete();
       await conectando;
-      transport.conexoes['wss://a.test']!.emitir('["EVENT","caronas",{}]');
+      transport.conexoes['wss://a.test']!.emitir('["EVENT","corridas",{}]');
       await pumpEventQueue();
 
       expect(

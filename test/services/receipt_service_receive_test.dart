@@ -18,20 +18,102 @@ void main() {
     int? nota = 5,
     int guid = 1,
     String? anterior,
-  }) => emitirRecibo(
-    de: c.motorista,
-    para: c.eu.publicKey,
-    seq: seq,
-    guid: guidDe(guid),
-    nota: nota,
-    hashAnterior: anterior,
-  );
+  }) {
+    c.conhecer(guidDe(guid)); // emenda 26: recebi o orçamento dessa corrida
+    return emitirRecibo(
+      de: c.motorista,
+      para: c.eu.publicKey,
+      seq: seq,
+      guid: guidDe(guid),
+      nota: nota,
+      hashAnterior: anterior,
+    );
+  }
 
   Future<void> receber(Map<String, dynamic> evento) async {
     c.entregar(evento);
     await c.assentar();
     await c.service.settled();
   }
+
+  group('corrida conhecida (emenda 26)', () {
+    test(
+      'recibo válido de um estranho com corrida inventada é ignorado',
+      () async {
+        await c.iniciar();
+        final estranho = identidadeNova();
+        final recibo = emitirRecibo(
+          de: estranho,
+          para: c.eu.publicKey,
+          seq: 0,
+          nota: 1,
+          guid: guidDe(9006),
+        );
+
+        await receber(c.eventoDeRecibo(recibo, de: estranho));
+
+        expect(await c.store.receivedFor(recibo.guidCorrida), isNull);
+        expect((await c.store.myReputation()).corridas, 0);
+        expect(c.publicadosDe(20015), isEmpty);
+      },
+    );
+
+    test(
+      'corrida conhecida, mas orçamento de outro motorista: ignorado',
+      () async {
+        await c.iniciar();
+        final outroMotorista = identidadeNova();
+        c.conhecer(guidDe(4), outroMotorista); // o orçamento veio de outro
+        final recibo = emitirRecibo(
+          de: c.motorista,
+          para: c.eu.publicKey,
+          seq: 0,
+          nota: 1,
+          guid: guidDe(4),
+        );
+
+        await receber(c.eventoDeRecibo(recibo));
+
+        expect(await c.store.receivedFor(recibo.guidCorrida), isNull);
+        expect(c.publicadosDe(20015), isEmpty);
+      },
+    );
+
+    test('o recibo não pode se autodeclarar conhecido', () async {
+      await c.iniciar();
+      final recibo = emitirRecibo(
+        de: c.motorista,
+        para: c.eu.publicKey,
+        seq: 0,
+        guid: guidDe(5),
+      );
+
+      await receber(c.eventoDeRecibo(recibo));
+
+      expect(c.conhecidas, isEmpty);
+      expect(await c.store.receivedFor(recibo.guidCorrida), isNull);
+    });
+
+    test(
+      'corrida conhecida com o motorista certo: gravado e confirmado',
+      () async {
+        await c.iniciar();
+        c.conhecer(guidDe(6));
+        final recibo = emitirRecibo(
+          de: c.motorista,
+          para: c.eu.publicKey,
+          seq: 0,
+          nota: 4,
+          guid: guidDe(6),
+        );
+
+        await receber(c.eventoDeRecibo(recibo));
+
+        expect(await c.store.receivedFor(recibo.guidCorrida), recibo);
+        expect(c.publicadosDe(20015), hasLength(1));
+      },
+    );
+  });
 
   group('recibo válido (1.8)', () {
     test(

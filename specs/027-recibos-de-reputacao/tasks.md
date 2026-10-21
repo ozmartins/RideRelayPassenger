@@ -66,6 +66,11 @@
   - **Pendente**: os cenários 1–9 pedem dois aparelhos/emuladores com o app do motorista (feature 026 dele) e relays reais; não foram executados nesta sessão. O que o código cobre de forma automatizada está no quickstart ("Resultado da execução").
 - [X] T035 Atualizar `CLAUDE.md` (invariantes: contrato de recibos e vetor compartilhado; arquitetura: `ReceiptService`/`ReceiptStore`) em commit separado
 
+## Fase 7 — Emenda 26: corrida conhecida do recibo recebido
+
+- [X] T036 Emenda 26 no contrato, replicada do motorista, em commit anterior ao código (Princípio IV).
+- [X] T037 `ReceivedQuoteStore.byId` (SQLite e dublê) e a conferência em `ReceiptService.onReceiptEvent` (RF-016), com testes: estranho com corrida inventada, orçamento de outro motorista, recibo que não pode se autodeclarar conhecido, e o caso válido.
+
 ## Dependências
 
 - Fase 1 → todo o código. Fase 2 → Fases 3–5. US1 (3) é o MVP; US2 (4) depende de T024 (`saveDeclared`) e da Fase 2; US3 (5) depende de T026 (serviço) e é independente de US1.

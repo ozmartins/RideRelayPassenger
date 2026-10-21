@@ -37,6 +37,7 @@ class RecibosCenario {
       store: store,
       feed: feed,
       identity: eu,
+      isKnownRide: (guid, avaliador) async => conhecidas[guid] == avaliador,
       retryInterval: retryInterval,
       clock: clock,
     );
@@ -46,6 +47,15 @@ class RecibosCenario {
   final Identity eu = identidadeNova();
   final Identity motorista = identidadeNova();
   final InMemoryReceiptStore store = InMemoryReceiptStore();
+
+  /// Corridas que este passageiro conhece (orçamento recebido), por `guid`, com
+  /// a chave do motorista que o enviou — o que `ReceivedQuoteStore` guarda de
+  /// verdade (emenda 26). Um recibo só vale se a corrida estiver aqui.
+  final Map<String, String> conhecidas = {};
+
+  /// Registra que recebi o orçamento [guid] de [de] (o motorista por padrão).
+  void conhecer(String guid, [Identity? de]) =>
+      conhecidas[guid] = (de ?? motorista).publicKey;
   late final FakeTransport transport;
   late final RelayService relayService;
   late final EventFeed feed;

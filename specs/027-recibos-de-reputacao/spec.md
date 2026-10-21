@@ -119,6 +119,7 @@ próximo `20001`.
   alteração do código, incluindo os limites conhecidos e a justificativa de privacidade do `20001` em claro.
 - **RF-015**: Um vetor de teste de contrato (recibo canônico, `id_recibo`, assinatura, reputação válida e
   inválida) MUST existir e passar também no repositório do motorista.
+- **RF-016** (emenda 26): Ao receber um recibo, o app MUST gravá-lo só se o `guid_corrida` for de um orçamento que **este passageiro recebeu do avaliador**, conforme o registro local dos orçamentos recebidos; recibo de corrida desconhecida, ou ligada a outro motorista, MUST ser descartado sem erro e sem confirmação, e a consulta MUST usar só o registro local. Uma `reputacao` com mais de 5 recibos MUST ser tratada como malformada (ausente).
 
 ## Entidades
 

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'nostr_event.dart';
+import 'reputation.dart';
 
 /// Orçamento de corrida recebido de um motorista, já verificado e
 /// deduplicado pelo `EventFeed` (regras de recepção do contrato) antes de
@@ -22,6 +23,7 @@ class ReceivedQuote {
     required this.pricePerKm,
     required this.total,
     this.etaMinutes,
+    this.reputation,
   });
 
   /// O `id` do evento `kind: 20002` — chave de persistência (FR-002).
@@ -44,6 +46,11 @@ class ReceivedQuote {
   /// Tempo estimado até o ponto de partida, em minutos — `null` quando o
   /// motorista não conseguiu calculá-lo (emenda 06 do contrato; FR-006).
   final int? etaMinutes;
+
+  /// Reputação que o motorista declarou neste orçamento (emenda 25, feature
+  /// 027) — `null` quando ausente **ou malformada**: reputação ruim nunca
+  /// invalida o orçamento.
+  final Reputation? reputation;
 
   /// Decodifica um [NostrEvent] de `kind: 20002` para esta entidade.
   ///
@@ -71,9 +78,20 @@ class ReceivedQuote {
         pricePerKm: (content['pricePerKm'] as num).toDouble(),
         total: (content['total'] as num).toDouble(),
         etaMinutes: (content['etaMinutes'] as num?)?.toInt(),
+        reputation: _readReputation(content['reputacao']),
       );
     } on Object catch (erro) {
       throw FormatException('Orçamento malformado: $erro');
+    }
+  }
+
+  /// `reputacao` opcional: ausente ou malformada vira `null`, sem lançar.
+  static Reputation? _readReputation(Object? json) {
+    if (json == null) return null;
+    try {
+      return Reputation.fromJson(json);
+    } on Object {
+      return null;
     }
   }
 

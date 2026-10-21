@@ -6,6 +6,8 @@ import 'package:dart_nostr/dart_nostr.dart' as nostr;
 import 'package:passenger/domain/identity.dart';
 import 'package:passenger/domain/nostr_event.dart';
 import 'package:passenger/domain/received_quote.dart';
+import 'package:passenger/domain/receipt.dart';
+import 'package:passenger/domain/reputation.dart';
 import 'package:passenger/domain/ride_request.dart';
 import 'package:passenger/services/event_verifier.dart';
 import 'package:passenger/services/message_cipher.dart';
@@ -74,6 +76,16 @@ const rideCancelledByPassengerKind = 20013;
 /// consumida pelo passageiro nesta feature (020 dele): o motorista da corrida
 /// aceita já está comprometido com outra e não pode atendê-la.
 const rideUnavailableKind = 20006;
+
+/// `kind` do "Recibo de avaliação" (emenda 25 do contrato, definida pela
+/// feature 026 do motorista) — publicado pelo passageiro ao avaliar o motorista
+/// e consumido ao ser avaliado por ele (feature 027 dele). Cifrado ao
+/// destinatário; recibo silencioso, sem notificação.
+const receiptKind = 20014;
+
+/// `kind` da "Confirmação de recibo" (emenda 25 do contrato): o avaliado
+/// confirma ao avaliador que gravou o recibo, para este parar de reenviá-lo.
+const receiptAckKind = 20015;
 
 /// Desfecho da publicação em um relay.
 enum PublishStatus { accepted, rejected, noAnswer }
@@ -198,10 +210,15 @@ class EventFeed {
   /// `specs/006-solicitar-corrida/contracts/ride-request-event.md`: `origin`
   /// e `destination` com `lat`/`lon` em graus decimais, sem truncamento de
   /// precisão, e `payment` com o valor de contrato de [RideRequest.payment].
+  ///
+  /// [reputation] (emenda 25) é a reputação do próprio passageiro, **em claro**
+  /// como o resto do `20001` (exceção da constituição 2.17.0); a chave
+  /// `reputacao` só existe quando há recibos — nunca vai `null` nem vazia.
   Future<PublishReport> publishRideRequest(
     RideRequest request,
-    Identity identity,
-  ) => _publish(
+    Identity identity, {
+    Reputation? reputation,
+  }) => _publish(
     kind: rideRequestKind,
     content: jsonEncode({
       'origin': {
@@ -213,6 +230,8 @@ class EventFeed {
         'lon': request.destination.longitude,
       },
       'payment': request.payment.contractValue,
+      if (reputation != null && !reputation.isEmpty)
+        'reputacao': reputation.toJson(),
     }),
     identity: identity,
   );
@@ -302,6 +321,40 @@ class EventFeed {
     extraTags: [
       ['e', quoteId],
       ['p', driverPubkey],
+    ],
+  );
+
+  /// Publica o recibo de avaliação (`kind: 20014`, emenda 25) ao avaliado
+  /// ([Receipt.pubkeyAvaliado]): `content` é o recibo completo (JSON, com
+  /// `assinatura`), cifrado a ele. Nada sai em claro: se não der para cifrar,
+  /// nada é transmitido (relatório vazio).
+  Future<PublishReport> publishReceipt(Receipt receipt, Identity identity) =>
+      _publish(
+        kind: receiptKind,
+        content: jsonEncode(receipt.toJson()),
+        identity: identity,
+        recipientPubkey: receipt.pubkeyAvaliado,
+        extraTags: [
+          ['e', receipt.guidCorrida],
+          ['p', receipt.pubkeyAvaliado],
+        ],
+      );
+
+  /// Publica a confirmação de recibo (`kind: 20015`, emenda 25) ao avaliador
+  /// [avaliadorPubkey], cifrada a ele: `{"id_recibo":"<hex>"}`.
+  Future<PublishReport> publishReceiptAck(
+    String guidCorrida,
+    String idRecibo,
+    String avaliadorPubkey,
+    Identity identity,
+  ) => _publish(
+    kind: receiptAckKind,
+    content: jsonEncode({'id_recibo': idRecibo}),
+    identity: identity,
+    recipientPubkey: avaliadorPubkey,
+    extraTags: [
+      ['e', guidCorrida],
+      ['p', avaliadorPubkey],
     ],
   );
 

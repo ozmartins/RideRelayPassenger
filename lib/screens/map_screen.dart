@@ -14,6 +14,7 @@ import '../domain/passenger_position.dart';
 import '../domain/passenger_ride_status.dart';
 import '../domain/payment_method.dart';
 import '../domain/received_quote.dart';
+import '../domain/reputation.dart';
 import '../domain/ride_rating.dart';
 import '../domain/ride_request.dart';
 import '../domain/ride_route.dart';
@@ -27,6 +28,8 @@ import '../services/geocoding_service.dart';
 import '../services/location_service.dart';
 import '../services/passenger_ride_state_store.dart';
 import '../services/received_quote_store.dart';
+import '../services/receipt_service.dart';
+import '../services/receipt_store.dart';
 import '../services/relay_hub.dart';
 import '../services/ride_rating_store.dart';
 import '../services/route_service.dart';
@@ -87,6 +90,8 @@ class MapScreen extends StatefulWidget {
     required this.destinationStore,
     required this.rideStateStore,
     required this.rideRatingStore,
+    required this.receiptStore,
+    required this.receiptService,
     this.serviceController,
   });
 
@@ -107,6 +112,14 @@ class MapScreen extends StatefulWidget {
 
   /// Persistência da avaliação da corrida (feature 011, FR-004/FR-005).
   final RideRatingStore rideRatingStore;
+
+  /// Recibos de reputação (feature 027): guarda a reputação declarada pelo
+  /// motorista ao aceitar o orçamento e fornece a do próprio passageiro à
+  /// solicitação.
+  final ReceiptStore receiptStore;
+
+  /// Emite o recibo do motorista ao fim da corrida (feature 027).
+  final ReceiptService receiptService;
 
   /// Controla o serviço em segundo plano (feature 026): recebe o estado da
   /// corrida e a visibilidade do app. Nulo nos testes e onde não há serviço.
@@ -845,10 +858,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (rideId == null || !PassengerRideRules.canFinishRating(_rideStatus)) {
       return;
     }
+    final corrida = _corridaAceita;
     await widget.rideRatingStore.save(
       RideRating(rideId: rideId, stars: stars, ratedAt: DateTime.now()),
       widget.identity,
     );
+    // Feature 027: o recibo é derivado da nota local, depois que ela está
+    // gravada e antes de a corrida ser zerada.
+    unawaited(_emitirRecibo(corrida, stars));
     if (!mounted) return;
     _finalizarAvaliacao();
   }
@@ -857,7 +874,31 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// estado a `inicial` (FR-008 da feature 011; FR-008 da feature 014).
   void _pularAvaliacao() {
     if (!PassengerRideRules.canFinishRating(_rideStatus)) return;
+    // Pular conta como corrida, não como avaliação: recibo sem nota.
+    unawaited(_emitirRecibo(_corridaAceita, null));
     _finalizarAvaliacao();
+  }
+
+  /// Emite o recibo do motorista da [corrida] (feature 027, contrato 1.7).
+  /// Nunca bloqueia nem derruba a interface: a falha de emissão ou de
+  /// publicação deixa o recibo pendente, e só a reputação inconsistente do
+  /// motorista vira aviso de uma linha.
+  Future<void> _emitirRecibo(AcceptedRide? corrida, int? stars) async {
+    if (corrida == null) return;
+    try {
+      final desfecho = await widget.receiptService.issueFor(corrida, stars);
+      if (desfecho == ReceiptIssueOutcome.skippedInconsistent && mounted) {
+        // Os avisos entram numa fila: o desta corrida não pode esperar o
+        // anterior (de seis segundos) terminar.
+        ScaffoldMessenger.of(context).hideCurrentSnackBar();
+        _avisar(
+          'A reputação do motorista é inconsistente: o recibo desta corrida '
+          'não foi emitido. Sua nota foi guardada.',
+        );
+      }
+    } on Object {
+      // Sem recibo desta vez; a nota local continua gravada.
+    }
   }
 
   /// Zera a corrida e volta o estado a `inicial`, liberando uma nova
@@ -912,6 +953,21 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       driverPubkey: quote.driverPubkey,
     );
     unawaited(widget.acceptedRideStore.save(aceita));
+    // Feature 027: a reputação que o motorista declarou neste orçamento é a
+    // base do recibo que o passageiro emitirá ao fim da corrida (seq e head).
+    // Sem reputação declarada não há o que guardar (motorista sem histórico).
+    final declarada = quote.reputation;
+    if (declarada != null) {
+      try {
+        await widget.receiptStore.saveDeclared(
+          quote.quoteId,
+          quote.driverPubkey,
+          declarada,
+        );
+      } on Object {
+        // Sem a declarada o recibo não é emitido; a aceitação não falha por isso.
+      }
+    }
     unawaited(
       widget.rideStateStore.save(PassengerRideStatus.orcamentoAceito, null),
     );
@@ -1198,9 +1254,18 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (!mounted) return;
 
     setState(() => _solicitando = true);
+    // Feature 027: a reputação do próprio passageiro vai em claro no 20001; sem
+    // recibos a chave é omitida. Falha ao ler não impede a solicitação.
+    Reputation? reputacao;
+    try {
+      reputacao = await widget.receiptStore.myReputation();
+    } on Object {
+      reputacao = null;
+    }
     final relato = await widget.eventFeed.publishRideRequest(
       RideRequest(origin: posicao, destination: _destino!, payment: _pagamento),
       widget.identity,
+      reputation: reputacao,
     );
     if (!mounted) return;
     setState(() => _solicitando = false);

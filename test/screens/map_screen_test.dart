@@ -14,6 +14,7 @@ import 'package:passenger/domain/passenger_ride_status.dart';
 import 'package:passenger/domain/payment_method.dart';
 import 'package:passenger/domain/relay.dart';
 import 'package:passenger/domain/received_quote.dart';
+import 'package:passenger/domain/receipt.dart';
 import 'package:passenger/domain/ride_rating.dart';
 import 'package:passenger/screens/identidade_visual.dart';
 import 'package:passenger/domain/service_state.dart';
@@ -30,6 +31,7 @@ import 'package:passenger/services/location_service.dart';
 import 'package:passenger/services/message_cipher.dart';
 import 'package:passenger/services/nip44.dart';
 import 'package:passenger/services/passenger_ride_state_store.dart';
+import 'package:passenger/services/receipt_service.dart';
 import 'package:passenger/services/received_quote_store.dart';
 import 'package:passenger/services/relay_service.dart';
 import 'package:passenger/services/ride_rating_store.dart';
@@ -41,6 +43,8 @@ import '../support/fake_geocoding_service.dart';
 import '../support/fake_location_service.dart';
 import '../support/fake_relay_transport.dart';
 import '../support/fake_route_service.dart';
+import '../support/in_memory_receipt_store.dart';
+import '../support/receipt_builders.dart';
 import '../support/memory_channel.dart';
 
 /// Dublê em memória: nenhum teste toca SQLite real (Princípio II por
@@ -167,6 +171,12 @@ void main() {
   late RelayService relayService;
   late EventFeed eventFeed;
   late Identity identidade;
+  late InMemoryReceiptStore receiptStore;
+  late ReceiptService receiptService;
+
+  /// Feature 027: quando definido, todo orçamento de teste leva esta
+  /// `reputacao` (montada para o motorista autor do orçamento).
+  Map<String, dynamic> Function(Identity motorista)? reputacaoDoMotorista;
 
   setUp(() {
     transport = FakeTransport({});
@@ -197,6 +207,13 @@ void main() {
     eventFeed.start();
     final par = novoPar();
     identidade = Identity(publicKey: par.public, privateKey: par.private);
+    receiptStore = InMemoryReceiptStore();
+    reputacaoDoMotorista = null;
+    receiptService = ReceiptService(
+      store: receiptStore,
+      feed: eventFeed,
+      identity: identidade,
+    );
   });
 
   tearDown(() {
@@ -270,6 +287,8 @@ void main() {
           rideStateStore:
               rideStateStore ?? InMemoryPassengerRideStateStore(),
           rideRatingStore: rideRatingStore ?? FakeRideRatingStore(),
+          receiptStore: receiptStore,
+          receiptService: receiptService,
         ),
       ),
     );
@@ -358,24 +377,31 @@ void main() {
     nostr.NostrKeyPairs? autor,
     double total = 25.0,
     int? etaMinutes = 6,
-  }) => eventoDoMotorista(
-    autor: autor ?? novoPar(),
-    kind: rideQuoteKind,
-    content: jsonEncode({
-      'pricePerKm': 2.5,
-      'total': total,
-      'driverName': 'Fulano da Silva',
-      'carBrand': 'Fiat',
-      'carModel': 'Palio',
-      'carYear': 2018,
-      'etaMinutes': ?etaMinutes,
-    }),
-    tags: [
-      prototypeMarkerTag,
-      ['e', requestId],
-      ['p', 'pubkey-do-passageiro'],
-    ],
-  );
+  }) {
+    final par = autor ?? novoPar();
+    return eventoDoMotorista(
+      autor: par,
+      kind: rideQuoteKind,
+      content: jsonEncode({
+        'pricePerKm': 2.5,
+        'total': total,
+        'driverName': 'Fulano da Silva',
+        'carBrand': 'Fiat',
+        'carModel': 'Palio',
+        'carYear': 2018,
+        'etaMinutes': ?etaMinutes,
+        if (reputacaoDoMotorista != null)
+          'reputacao': reputacaoDoMotorista!(
+            Identity(publicKey: par.public, privateKey: par.private),
+          ),
+      }),
+      tags: [
+        prototypeMarkerTag,
+        ['e', requestId],
+        ['p', 'pubkey-do-passageiro'],
+      ],
+    );
+  }
 
   /// Monta um payload de `kind: 20005` já assinado — a mesma localização
   /// que o motorista publicaria (emenda 08/10 do contrato), sob o mesmo
@@ -2214,6 +2240,139 @@ void main() {
 
         expect(find.text('Avalie a corrida'), findsNothing);
         expect(store.salvos, isEmpty);
+      },
+    );
+  });
+
+  group('MapScreen — recibos de reputação (feature 027)', () {
+    /// O `content` (em claro) do primeiro `20001` publicado pela tela.
+    Map<String, dynamic> conteudoDoVinteMilEUm() {
+      final enviadas = transport.conexoes['wss://a.test']!.enviadas.where(
+        (m) => m.startsWith('["EVENT"'),
+      );
+      final payload = (jsonDecode(enviadas.first) as List)[1] as Map;
+      expect(payload['kind'], 20001);
+      return jsonDecode(payload['content'] as String) as Map<String, dynamic>;
+    }
+
+    /// Reputação consistente do motorista: [n] recibos de um avaliador qualquer.
+    Map<String, dynamic> Function(Identity) historicoDe(int n) =>
+        (motorista) {
+          final cadeia = cadeiaDeRecibos(
+            avaliador: identidadeNova(),
+            dono: motorista,
+            tamanho: n,
+          );
+          return reputacaoDe(
+            cadeia.reversed.take(5).toList(),
+            seqProximo: n,
+          ).toJson();
+        };
+
+    testWidgets('solicitar sem recibos publica o 20001 sem a chave reputacao', (
+      tester,
+    ) async {
+      await montarComSolicitacaoAtiva(tester);
+
+      expect(conteudoDoVinteMilEUm().containsKey('reputacao'), isFalse);
+    });
+
+    testWidgets('solicitar com recibos publica a reputação própria em claro', (
+      tester,
+    ) async {
+      final motorista = identidadeNova();
+      final recibo = emitirRecibo(
+        de: motorista,
+        para: identidade.publicKey,
+        seq: 0,
+        nota: 5,
+      );
+      await receiptStore.saveReceived(recibo);
+
+      await montarComSolicitacaoAtiva(tester);
+
+      final reputacao = conteudoDoVinteMilEUm()['reputacao'] as Map;
+      expect(reputacao['corridas'], 1);
+      expect(reputacao['seq_proximo'], 1);
+      expect(reputacao['head'], recibo.idRecibo);
+      expect((reputacao['recibos'] as List).single['id_recibo'], recibo.idRecibo);
+    });
+
+    testWidgets('aceitar um orçamento com reputação guarda a declarada', (
+      tester,
+    ) async {
+      reputacaoDoMotorista = historicoDe(3);
+
+      final r = await montarComCorridaAceita(tester);
+
+      final declarada = receiptStore.declaradas[r.quoteId]!;
+      expect(declarada.seqProximo, 3);
+      expect(declarada.recibos, hasLength(3));
+    });
+
+    testWidgets('aceitar um orçamento sem reputação não guarda nada', (
+      tester,
+    ) async {
+      final r = await montarComCorridaAceita(tester);
+
+      expect(receiptStore.declaradas.containsKey(r.quoteId), isFalse);
+    });
+
+    testWidgets('avaliar com nota emite o recibo encadeado à declarada', (
+      tester,
+    ) async {
+      reputacaoDoMotorista = historicoDe(3);
+      final r = await montarComDestinoConfirmado(tester);
+
+      await tester.tap(find.byIcon(Icons.star_border).at(2));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
+      await tester.pumpAndSettle();
+
+      final recibo = receiptStore.emitidos[r.quoteId]!;
+      expect(recibo.nota, 3);
+      expect(recibo.seq, 3);
+      expect(recibo.pubkeyAvaliador, identidade.publicKey);
+      expect(recibo.pubkeyAvaliado, r.autor.public);
+      expect(receiptStore.pendentes, contains(r.quoteId));
+      expect(find.text('Avalie a corrida'), findsNothing);
+    });
+
+    testWidgets('pular a avaliação emite o recibo sem nota', (tester) async {
+      final r = await montarComDestinoConfirmado(tester);
+
+      await tester.tap(find.widgetWithText(TextButton, 'Pular'));
+      await tester.pumpAndSettle();
+
+      final Receipt recibo = receiptStore.emitidos[r.quoteId]!;
+      expect(recibo.nota, isNull);
+      expect(recibo.seq, 0);
+      expect(recibo.hashAnterior, isNull);
+    });
+
+    testWidgets(
+      'reputação do motorista inconsistente: nenhum recibo, aviso de uma linha '
+      'e a nota local continua gravada',
+      (tester) async {
+        reputacaoDoMotorista = (motorista) {
+          final base = historicoDe(3)(motorista);
+          base['head'] = 'f' * 64; // não bate com o recibo seq 2
+          return base;
+        };
+        final notas = FakeRideRatingStore();
+        final r = await montarComDestinoConfirmado(
+          tester,
+          rideRatingStore: notas,
+        );
+
+        await tester.tap(find.byIcon(Icons.star_border).at(3));
+        await tester.pump();
+        await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
+        await tester.pumpAndSettle();
+
+        expect(receiptStore.emitidos.containsKey(r.quoteId), isFalse);
+        expect(notas.salvos.single.stars, 4);
+        expect(find.textContaining('inconsistente'), findsOneWidget);
       },
     );
   });

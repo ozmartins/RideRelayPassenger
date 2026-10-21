@@ -40,6 +40,7 @@ class ReceiptService {
     required this.store,
     required this.feed,
     required this.identity,
+    required this.isKnownRide,
     this.retryInterval = const Duration(seconds: 60),
     DateTime Function()? clock,
   }) : _clock = clock ?? DateTime.now;
@@ -47,6 +48,11 @@ class ReceiptService {
   final ReceiptStore store;
   final EventFeed feed;
   final Identity identity;
+
+  /// Diz se [guidCorrida] é de um orçamento que este passageiro **recebeu** de
+  /// [avaliador] (emenda 26, contrato 1.8): só então um recibo dele vale.
+  /// Consulta o registro local, nunca dados do recibo.
+  final Future<bool> Function(String guidCorrida, String avaliador) isKnownRide;
 
   /// Intervalo do reenvio dos pendentes com o app aberto (contrato, 1.7).
   final Duration retryInterval;
@@ -189,6 +195,12 @@ class ReceiptService {
           recibo.hasValidId && // (a)
           ReceiptSignature.verify(recibo); // (b)
       if (!valido) return;
+
+      // Emenda 26: só vale recibo de uma corrida que eu já conhecia com o
+      // avaliador. Quem nunca me enviou orçamento não me empurra recibos.
+      if (!await isKnownRide(recibo.guidCorrida, recibo.pubkeyAvaliador)) {
+        return;
+      }
 
       if (!await store.saveReceived(recibo)) {
         final existente = await store.receivedFor(guid);

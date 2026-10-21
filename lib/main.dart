@@ -275,6 +275,9 @@ class _ShellState extends State<_Shell> {
     store: widget.receiptStore,
     feed: widget.eventFeed,
     identity: widget.identity,
+    isKnownRide: (guidCorrida, avaliador) async =>
+        (await widget.receivedQuoteStore.byId(guidCorrida))?.driverPubkey ==
+        avaliador,
   );
 
   @override

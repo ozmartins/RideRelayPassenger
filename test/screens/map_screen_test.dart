@@ -58,6 +58,10 @@ class FakeReceivedQuoteStore implements ReceivedQuoteStore {
   @override
   Future<List<ReceivedQuote>> byRequest(String requestId) async =>
       salvos.where((q) => q.requestId == requestId).toList();
+
+  @override
+  Future<ReceivedQuote?> byId(String quoteId) async =>
+      salvos.where((q) => q.quoteId == quoteId).firstOrNull;
 }
 
 /// Dublê em memória: nenhum teste toca SQLite real (feature 011).
@@ -213,6 +217,9 @@ void main() {
       store: receiptStore,
       feed: eventFeed,
       identity: identidade,
+      // Estes testes não recebem recibos; a recepção é testada em
+      // test/services/receipt_service_receive_test.dart.
+      isKnownRide: (_, _) async => false,
     );
   });
 

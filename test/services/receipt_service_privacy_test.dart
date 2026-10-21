@@ -29,6 +29,7 @@ void main() {
         seq: 0,
         guid: guidDe(2),
       );
+      c.conhecer(recibo.guidCorrida);
       c.entregar(c.eventoDeRecibo(recibo));
       await c.assentar();
       await c.service.settled();

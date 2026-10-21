@@ -18,6 +18,11 @@ abstract class ReceivedQuoteStore {
 
   /// Todos os orçamentos já persistidos para [requestId], em qualquer ordem.
   Future<List<ReceivedQuote>> byRequest(String requestId);
+
+  /// O orçamento de `id` [quoteId], ou `null` se este passageiro nunca o
+  /// recebeu. Diz se um recibo recebido é de uma corrida **conhecida** com o
+  /// avaliador (emenda 26, contrato 1.8).
+  Future<ReceivedQuote?> byId(String quoteId);
 }
 
 /// Implementação real: uma tabela SQLite, `received_quotes` (D2 de
@@ -103,6 +108,17 @@ class SqfliteReceivedQuoteStore implements ReceivedQuoteStore {
       whereArgs: [requestId],
     );
     return linhas.map(_fromRow).toList();
+  }
+
+  @override
+  Future<ReceivedQuote?> byId(String quoteId) async {
+    final db = await _open();
+    final linhas = await db.query(
+      'received_quotes',
+      where: 'id = ?',
+      whereArgs: [quoteId],
+    );
+    return linhas.isEmpty ? null : _fromRow(linhas.first);
   }
 
   static ReceivedQuote _fromRow(Map<String, Object?> linha) => ReceivedQuote(

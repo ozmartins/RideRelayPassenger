@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../domain/received_quote.dart';
+import '../domain/reputation_view.dart';
+import '../services/reputation_verifier.dart';
 import 'identidade_visual.dart';
 
 /// Tela dedicada ao acompanhamento dos orçamentos recebidos para a
@@ -98,6 +100,30 @@ class _ItemDeOrcamentoState extends State<_ItemDeOrcamento> {
   var _aceitando = false;
   String? _erro;
 
+  /// Reputação do motorista já verificada (feature 027). Calculada uma vez por
+  /// orçamento: a verificação confere assinaturas e não deve repetir a cada
+  /// reconstrução do item.
+  ReputationView? _reputacao;
+
+  @override
+  void initState() {
+    super.initState();
+    _reputacao = _verificar(widget.quote);
+  }
+
+  @override
+  void didUpdateWidget(_ItemDeOrcamento antigo) {
+    super.didUpdateWidget(antigo);
+    if (antigo.quote != widget.quote) _reputacao = _verificar(widget.quote);
+  }
+
+  static ReputationView? _verificar(ReceivedQuote quote) {
+    final reputacao = quote.reputation;
+    return reputacao == null
+        ? null
+        : ReputationVerifier.verify(reputacao, quote.driverPubkey);
+  }
+
   Future<void> _aceitar() async {
     if (_aceitando) return;
     setState(() {
@@ -158,6 +184,7 @@ class _ItemDeOrcamentoState extends State<_ItemDeOrcamento> {
                         color: IdentidadeVisual.textoSuave,
                       ),
                     ),
+                    _ReputacaoDoMotorista(view: _reputacao),
                   ],
                 ),
               ),
@@ -200,6 +227,72 @@ class _ItemDeOrcamentoState extends State<_ItemDeOrcamento> {
             ),
         ],
       ),
+    );
+  }
+}
+
+/// Reputação do motorista no orçamento (feature 027, emenda 25): o
+/// **verificado** (só recibos com assinatura e encadeamento conferidos) em
+/// destaque, o **declarado** em texto menor — nunca misturados numa nota só —
+/// e os avisos de reputação inconsistente, lacunas e recibos descartados.
+class _ReputacaoDoMotorista extends StatelessWidget {
+  const _ReputacaoDoMotorista({required this.view});
+
+  /// `null` quando o orçamento não trouxe reputação (motorista sem histórico).
+  final ReputationView? view;
+
+  @override
+  Widget build(BuildContext context) {
+    const suave = TextStyle(fontSize: 12, color: IdentidadeVisual.textoSuave);
+    final v = view;
+    if (v == null || (!v.hasHistory && v.invalidDiscarded == 0)) {
+      return const Text('Sem histórico de avaliações', style: suave);
+    }
+    final erro = Theme.of(context).colorScheme.error;
+    final media = v.verifiedAverage;
+    final verificado = v.verifiedCount == 0
+        ? 'Nenhum recibo verificado'
+        : 'Verificado nos últimos ${v.verifiedCount}: '
+              '${media == null ? 'sem notas' : '★ ${media.toStringAsFixed(1)}'}';
+    final d = v.declared;
+    final declarado = d.corridas == 0
+        ? null
+        : 'Declarado: ${d.corridas} corridas · ${d.avaliacoes} avaliações'
+              '${d.media == null ? '' : ' · média ${d.media!.toStringAsFixed(2)}'}';
+    final avisos = [
+      if (v.inconsistent) 'Reputação inconsistente',
+      if (v.gaps > 0)
+        '${v.gaps} ${v.gaps == 1 ? 'recibo não apresentado' : 'recibos não apresentados'}',
+      if (v.invalidDiscarded > 0)
+        '${v.invalidDiscarded} ${v.invalidDiscarded == 1 ? 'recibo inválido descartado' : 'recibos inválidos descartados'}',
+    ];
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          verificado,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: const TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: IdentidadeVisual.texto,
+          ),
+        ),
+        if (declarado != null)
+          Text(
+            declarado,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              fontSize: 11,
+              color: IdentidadeVisual.textoSuave,
+            ),
+          ),
+        for (final aviso in avisos)
+          Text(aviso, style: TextStyle(fontSize: 11, color: erro)),
+      ],
     );
   }
 }

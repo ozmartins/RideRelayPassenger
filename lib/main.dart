@@ -20,6 +20,8 @@ import 'package:passenger/services/location_service.dart';
 import 'package:passenger/services/name_service.dart';
 import 'package:passenger/services/passenger_ride_state_store.dart';
 import 'package:passenger/services/prefs_key_value_store.dart';
+import 'package:passenger/services/receipt_service.dart';
+import 'package:passenger/services/receipt_store.dart';
 import 'package:passenger/services/received_quote_store.dart';
 import 'package:passenger/services/relay_hub.dart';
 import 'package:passenger/services/remote_relay_hub.dart';
@@ -105,6 +107,8 @@ class _BootstrapState extends State<_Bootstrap> {
     // corrida pelo motorista.
     // Emenda 16 / feature 020: acrescenta rideUnavailableKind, o aviso de que o
     // motorista não pode atender a corrida.
+    // Emenda 25 / feature 027: acrescenta receiptKind e receiptAckKind, os
+    // recibos de reputação (silenciosos, sem notificação).
     // Mesma lista que o serviço em segundo plano usa na inscrição (feature 026).
     acceptedKinds: passengerConsumedKinds,
   );
@@ -122,6 +126,7 @@ class _BootstrapState extends State<_Bootstrap> {
   final PassengerRideStateStore _rideStateStore =
       PreferencesPassengerRideStateStore(const PrefsKeyValueStore());
   final RideRatingStore _rideRatingStore = SqfliteRideRatingStore();
+  final ReceiptStore _receiptStore = SqfliteReceiptStore();
   String? _nomeAtual;
   var _nomeCarregado = false;
 
@@ -207,6 +212,7 @@ class _BootstrapState extends State<_Bootstrap> {
           destinationStore: _destinationStore,
           rideStateStore: _rideStateStore,
           rideRatingStore: _rideRatingStore,
+          receiptStore: _receiptStore,
           identity: snapshot.data!,
           displayName: _nomeAtual!,
           onSaveName: _salvarNome,
@@ -232,6 +238,7 @@ class _Shell extends StatefulWidget {
     required this.destinationStore,
     required this.rideStateStore,
     required this.rideRatingStore,
+    required this.receiptStore,
     required this.identity,
     required this.displayName,
     required this.onSaveName,
@@ -249,6 +256,7 @@ class _Shell extends StatefulWidget {
   final DestinationStore destinationStore;
   final PassengerRideStateStore rideStateStore;
   final RideRatingStore rideRatingStore;
+  final ReceiptStore receiptStore;
   final Identity identity;
   final String displayName;
   final Future<void> Function(String) onSaveName;
@@ -259,6 +267,27 @@ class _Shell extends StatefulWidget {
 
 class _ShellState extends State<_Shell> {
   int _index = 0;
+
+  /// Recibos de reputação (feature 027): emite, reenvia e recebe. Precisa da
+  /// identidade, por isso nasce aqui e não no `_AppState`. Ao ser criado já
+  /// tenta reenviar os recibos pendentes (abertura do app).
+  late final ReceiptService _receiptService = ReceiptService(
+    store: widget.receiptStore,
+    feed: widget.eventFeed,
+    identity: widget.identity,
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _receiptService.start();
+  }
+
+  @override
+  void dispose() {
+    unawaited(_receiptService.dispose());
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -276,6 +305,8 @@ class _ShellState extends State<_Shell> {
         destinationStore: widget.destinationStore,
         rideStateStore: widget.rideStateStore,
         rideRatingStore: widget.rideRatingStore,
+        receiptStore: widget.receiptStore,
+        receiptService: _receiptService,
       ),
       HomeScreen(
         relayService: widget.relayService,

@@ -2,8 +2,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:passenger/domain/received_quote.dart';
+import 'package:passenger/domain/reputation.dart';
 import 'package:passenger/screens/identidade_visual.dart';
 import 'package:passenger/screens/received_quotes_screen.dart';
+
+import '../support/receipt_builders.dart';
 
 ReceivedQuote _quote({
   String quoteId = 'q1',
@@ -195,5 +198,126 @@ void main() {
     await tester.pump();
 
     expect(cancelado, isTrue);
+  });
+
+  group('reputação do motorista (feature 027)', () {
+    final motorista = identidadeNova();
+    final cadeia = cadeiaDeRecibos(
+      avaliador: identidadeNova(),
+      dono: motorista,
+    );
+
+    ReceivedQuote comReputacao(Reputation? reputacao) => ReceivedQuote(
+      quoteId: 'q1',
+      requestId: 'r1',
+      driverPubkey: motorista.publicKey,
+      driverName: 'Fulano da Silva',
+      carBrand: 'Fiat',
+      carModel: 'Palio',
+      carYear: 2018,
+      pricePerKm: 2.5,
+      total: 25.0,
+      etaMinutes: 6,
+      reputation: reputacao,
+    );
+
+    Future<void> mostrar(WidgetTester tester, Reputation? reputacao) =>
+        _montar(
+          tester,
+          quotes: ValueNotifier([comReputacao(reputacao)]),
+        );
+
+    testWidgets('sem reputação: motorista sem histórico', (tester) async {
+      await mostrar(tester, null);
+
+      expect(find.text('Sem histórico de avaliações'), findsOneWidget);
+      expect(find.textContaining('Verificado'), findsNothing);
+    });
+
+    testWidgets('verificado em destaque e declarado em texto menor', (
+      tester,
+    ) async {
+      final tres = [cadeia[2], cadeia[1], cadeia[0]];
+      await mostrar(tester, reputacaoDe(tres, seqProximo: 3));
+
+      expect(find.text('Verificado nos últimos 3: ★ 2.0'), findsOneWidget);
+      expect(
+        find.text('Declarado: 3 corridas · 3 avaliações · média 2.00'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('inconsistente'), findsNothing);
+      expect(find.textContaining('não apresentado'), findsNothing);
+    });
+
+    testWidgets('declarado alto não altera o verificado', (tester) async {
+      final base = reputacaoDe([cadeia[2], cadeia[1], cadeia[0]], seqProximo: 3);
+      await mostrar(
+        tester,
+        Reputation(
+          corridas: 500,
+          avaliacoes: 500,
+          media: 5.0,
+          seqProximo: base.seqProximo,
+          head: base.head,
+          recibos: base.recibos,
+        ),
+      );
+
+      expect(find.text('Verificado nos últimos 3: ★ 2.0'), findsOneWidget);
+      expect(
+        find.text('Declarado: 500 corridas · 500 avaliações · média 5.00'),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('reputação inconsistente é destacada', (tester) async {
+      await mostrar(
+        tester,
+        reputacaoDe(
+          [cadeia[2], cadeia[1], cadeia[0]],
+          seqProximo: 3,
+          head: cadeia[0].idRecibo,
+        ),
+      );
+
+      expect(find.text('Reputação inconsistente'), findsOneWidget);
+    });
+
+    testWidgets('lacuna: "N recibos não apresentados"', (tester) async {
+      await mostrar(
+        tester,
+        reputacaoDe([cadeia[6], cadeia[5], cadeia[3]], seqProximo: 7),
+      );
+
+      expect(find.text('1 recibo não apresentado'), findsOneWidget);
+    });
+
+    testWidgets('recibo adulterado é descartado e contado', (tester) async {
+      await mostrar(
+        tester,
+        reputacaoDe(
+          [cadeia[2], comNotaTrocada(cadeia[1]), cadeia[0]],
+          seqProximo: 3,
+        ),
+      );
+
+      expect(find.text('Verificado nos últimos 2: ★ 2.0'), findsOneWidget);
+      expect(find.text('1 recibo inválido descartado'), findsOneWidget);
+    });
+
+    testWidgets('nenhum recibo verificado quando todos são inválidos', (
+      tester,
+    ) async {
+      final outroDono = identidadeNova();
+      final alheios = cadeiaDeRecibos(
+        avaliador: identidadeNova(),
+        dono: outroDono,
+        tamanho: 2,
+      );
+      await mostrar(tester, reputacaoDe(alheios.reversed.toList(), seqProximo: 2));
+
+      expect(find.text('Nenhum recibo verificado'), findsOneWidget);
+      expect(find.text('2 recibos inválidos descartados'), findsOneWidget);
+    });
   });
 }

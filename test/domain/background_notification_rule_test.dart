@@ -106,6 +106,22 @@ void main() {
       }
     });
 
+    test('20014 e 20015 (recibos) nunca notificam, em nenhum estado', () {
+      for (final kind in [20014, 20015]) {
+        expect(
+          BackgroundNotificationRule.notifiableKinds,
+          isNot(contains(kind)),
+        );
+        for (final s in PassengerRideStatus.values) {
+          expect(
+            BackgroundNotificationRule.evaluate(_evento(kind), _estado(s)),
+            isNull,
+            reason: '$kind em $s',
+          );
+        }
+      }
+    });
+
     test('tag p alheia ou ausente: nada', () {
       final estado = _estado(PassengerRideStatus.emCorrida);
       expect(

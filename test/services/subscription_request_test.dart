@@ -19,7 +19,10 @@ void main() {
       rideRouteKind,
       rideCancelledKind,
       rideUnavailableKind,
+      receiptKind,
+      receiptAckKind,
     });
+    expect(passengerConsumedKinds, containsAll([20014, 20015]));
   });
 
   test('a inscrição do serviço é a mesma do EventFeed (emendas 01 e 02)', () {

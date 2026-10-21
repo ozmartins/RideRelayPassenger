@@ -1,7 +1,10 @@
+import 'dart:convert';
+
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart' as sqflite;
 
 import '../domain/received_quote.dart';
+import '../domain/reputation.dart';
 
 /// Persistência dos orçamentos recebidos.
 ///
@@ -35,7 +38,7 @@ class SqfliteReceivedQuoteStore implements ReceivedQuoteStore {
     final caminho = p.join(await sqflite.getDatabasesPath(), databaseName);
     final db = await sqflite.openDatabase(
       caminho,
-      version: 1,
+      version: 2,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE received_quotes (
@@ -48,13 +51,23 @@ class SqfliteReceivedQuoteStore implements ReceivedQuoteStore {
             car_year       INTEGER NOT NULL,
             price_per_km   REAL NOT NULL,
             total          REAL NOT NULL,
-            eta_minutes    INTEGER
+            eta_minutes    INTEGER,
+            reputation_json TEXT
           )
         ''');
         await db.execute(
           'CREATE INDEX idx_received_quotes_request_id '
           'ON received_quotes (request_id)',
         );
+      },
+      // v2 (feature 027): a reputação declarada pelo motorista no orçamento,
+      // para sobreviver a um reinício enquanto o passageiro escolhe.
+      onUpgrade: (db, oldVersion, newVersion) async {
+        if (oldVersion < 2) {
+          await db.execute(
+            'ALTER TABLE received_quotes ADD COLUMN reputation_json TEXT',
+          );
+        }
       },
     );
     _db = db;
@@ -75,6 +88,9 @@ class SqfliteReceivedQuoteStore implements ReceivedQuoteStore {
       'price_per_km': quote.pricePerKm,
       'total': quote.total,
       'eta_minutes': quote.etaMinutes,
+      'reputation_json': quote.reputation == null
+          ? null
+          : jsonEncode(quote.reputation!.toJson()),
     }, conflictAlgorithm: sqflite.ConflictAlgorithm.replace);
   }
 
@@ -100,5 +116,16 @@ class SqfliteReceivedQuoteStore implements ReceivedQuoteStore {
     pricePerKm: (linha['price_per_km'] as num).toDouble(),
     total: (linha['total'] as num).toDouble(),
     etaMinutes: linha['eta_minutes'] as int?,
+    reputation: _reputationFromRow(linha['reputation_json']),
   );
+
+  /// Reputação gravada; ausente ou ilegível vira `null` (nunca lança).
+  static Reputation? _reputationFromRow(Object? json) {
+    if (json is! String) return null;
+    try {
+      return Reputation.fromJson(jsonDecode(json));
+    } on Object {
+      return null;
+    }
+  }
 }

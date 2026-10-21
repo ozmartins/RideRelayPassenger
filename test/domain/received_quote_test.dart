@@ -1,6 +1,11 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:passenger/domain/nostr_event.dart';
 import 'package:passenger/domain/received_quote.dart';
+import 'package:passenger/domain/reputation.dart';
+
+import '../support/receipt_builders.dart';
 
 NostrEvent _eventoDe(
   String content, {
@@ -49,6 +54,62 @@ void main() {
       final quote = ReceivedQuote.fromNostrEvent(evento);
 
       expect(quote.etaMinutes, isNull);
+    });
+
+    group('reputacao (emenda 25, feature 027)', () {
+      const base =
+          '"pricePerKm":2.5,"total":25.0,"driverName":"Fulano da Silva",'
+          '"carBrand":"Fiat","carModel":"Palio","carYear":2018';
+
+      Object? reputacaoValida() {
+        final dono = identidadeNova();
+        final c = cadeiaDeRecibos(avaliador: identidadeNova(), dono: dono);
+        return reputacaoDe([c[2], c[1], c[0]], seqProximo: 3).toJson();
+      }
+
+      test('presente e válida: é lida', () {
+        final evento = _eventoDe(
+          '{$base,"reputacao":${jsonEncode(reputacaoValida())}}',
+        );
+
+        final quote = ReceivedQuote.fromNostrEvent(evento);
+
+        expect(quote.reputation, isA<Reputation>());
+        expect(quote.reputation!.recibos, hasLength(3));
+        expect(quote.reputation!.seqProximo, 3);
+      });
+
+      test('ausente: fica nula', () {
+        final quote = ReceivedQuote.fromNostrEvent(_eventoDe('{$base}'));
+
+        expect(quote.reputation, isNull);
+      });
+
+      for (final ruim in [
+        '"texto"',
+        '[]',
+        '{}',
+        '{"corridas":1}',
+        '{"corridas":-1,"avaliacoes":0,"seq_proximo":0,"recibos":[]}',
+      ]) {
+        test('malformada ($ruim): o orçamento segue válido, sem reputação', () {
+          final quote = ReceivedQuote.fromNostrEvent(
+            _eventoDe('{$base,"reputacao":$ruim}'),
+          );
+
+          expect(quote.driverName, 'Fulano da Silva');
+          expect(quote.total, 25.0);
+          expect(quote.reputation, isNull);
+        });
+      }
+
+      test('null explícito: fica nula', () {
+        final quote = ReceivedQuote.fromNostrEvent(
+          _eventoDe('{$base,"reputacao":null}'),
+        );
+
+        expect(quote.reputation, isNull);
+      });
     });
 
     test('lança FormatException quando não há tag e (solicitação)', () {

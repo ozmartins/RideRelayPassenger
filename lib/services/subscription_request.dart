@@ -19,6 +19,8 @@ const Set<int> passengerConsumedKinds = {
   20011, // rota da corrida (emenda 13)
   20012, // corrida cancelada pelo motorista (emenda 14)
   20006, // motorista indisponível (emenda 16)
+  20014, // recibo de avaliação (emenda 25; silencioso, sem notificação)
+  20015, // confirmação de recibo (emenda 25; silencioso)
 };
 
 /// A inscrição, conforme o contrato (emendas 01 e 02): filtra por `kind` e pelo

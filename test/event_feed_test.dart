@@ -8,11 +8,14 @@ import 'package:passenger/domain/nostr_event.dart';
 import 'package:passenger/domain/passenger_position.dart';
 import 'package:passenger/domain/payment_method.dart';
 import 'package:passenger/domain/received_quote.dart';
+import 'package:passenger/domain/receipt.dart';
+import 'package:passenger/domain/reputation.dart';
 import 'package:passenger/domain/relay.dart';
 import 'package:passenger/domain/ride_request.dart';
 import 'package:passenger/services/event_feed.dart';
 import 'package:passenger/services/event_verifier.dart';
 import 'package:passenger/services/message_cipher.dart';
+import 'package:passenger/services/receipt_signature.dart';
 import 'package:passenger/services/relay_service.dart';
 import 'package:passenger/shared/prototype_marker.dart';
 
@@ -1253,6 +1256,209 @@ void main() {
         feed.decrypted(recebido(content: base64.encode(bytes)), passageiro),
         isNull,
       );
+    });
+  });
+
+  group('EventFeed — recibos de reputação (feature 027, emenda 25)', () {
+    late Identity motorista;
+    late Identity passageiro;
+
+    setUp(() {
+      motorista = _identidadeDe(novoPar());
+      passageiro = _identidadeDe(novoPar());
+    });
+
+    Future<Map<String, dynamic>> publicadoPor(
+      Cenario c,
+      Future<PublishReport> Function(EventFeed feed) publicar,
+    ) async {
+      await publicar(c.feed);
+      final enviado = c.transport.conexoes['wss://a.test']!.enviadas.firstWhere(
+        (m) => m.startsWith('["EVENT"'),
+      );
+      return (jsonDecode(enviado) as List)[1] as Map<String, dynamic>;
+    }
+
+    List<List<String>> tagsDe(Map<String, dynamic> payload) =>
+        (payload['tags'] as List<dynamic>)
+            .map((t) => (t as List<dynamic>).map((e) => e.toString()).toList())
+            .toList();
+
+    Receipt reciboParaMotorista() => ReceiptSignature.issue(
+      identity: passageiro,
+      guidCorrida: 'a' * 64,
+      pubkeyAvaliado: motorista.publicKey,
+      nota: 5,
+      criadoEm: 1790000000,
+      seq: 0,
+    );
+
+    test('as constantes são os kinds do contrato', () {
+      expect(receiptKind, 20014);
+      expect(receiptAckKind, 20015);
+    });
+
+    test('publishReceipt sai cifrado ao motorista, com tags e/p/t', () async {
+      final c = Cenario();
+      await c.iniciar();
+      final recibo = reciboParaMotorista();
+
+      final payload = await publicadoPor(
+        c,
+        (f) => f.publishReceipt(recibo, passageiro),
+      );
+
+      expect(payload['kind'], 20014);
+      // Content em claro é erro: nem o id nem a assinatura do recibo aparecem.
+      final conteudo = payload['content'] as String;
+      expect(conteudo, isNot(contains(recibo.idRecibo)));
+      expect(conteudo, isNot(contains('guid_corrida')));
+      final claro = MessageCipher().decryptFrom(
+        motorista,
+        passageiro.publicKey,
+        conteudo,
+      );
+      expect(Receipt.fromJson(jsonDecode(claro!)), recibo);
+      final tags = tagsDe(payload);
+      expect(tags, anyElement(equals(['t', prototypeMarker])));
+      expect(tags, anyElement(equals(['e', recibo.guidCorrida])));
+      expect(tags, anyElement(equals(['p', motorista.publicKey])));
+      expect(const NostrEventVerifier().isValid(payload), isTrue);
+      await c.fechar();
+    });
+
+    test('publishReceipt: só o avaliado decifra; um terceiro não', () async {
+      final c = Cenario();
+      await c.iniciar();
+      final terceiro = _identidadeDe(novoPar());
+
+      final payload = await publicadoPor(
+        c,
+        (f) => f.publishReceipt(reciboParaMotorista(), passageiro),
+      );
+
+      expect(
+        MessageCipher().decryptFrom(
+          terceiro,
+          passageiro.publicKey,
+          payload['content'] as String,
+        ),
+        isNull,
+      );
+      await c.fechar();
+    });
+
+    test('publishReceipt com destinatário inválido: nada é transmitido, '
+        'nunca em claro', () async {
+      final c = Cenario();
+      await c.iniciar();
+      final ruim = Receipt(
+        guidCorrida: 'a' * 64,
+        pubkeyAvaliador: passageiro.publicKey,
+        pubkeyAvaliado: 'pubkey-invalida',
+        criadoEm: 1,
+        seq: 0,
+        idRecibo: 'b' * 64,
+        assinatura: 'c' * 128,
+      );
+
+      final relato = await c.feed.publishReceipt(ruim, passageiro);
+
+      expect(relato.anyAccepted, isFalse);
+      expect(
+        c.transport.conexoes['wss://a.test']!.enviadas.where(
+          (m) => m.startsWith('["EVENT"'),
+        ),
+        isEmpty,
+      );
+      await c.fechar();
+    });
+
+    test('publishReceiptAck publica kind 20015 cifrado ao avaliador com '
+        'o id_recibo', () async {
+      final c = Cenario();
+      await c.iniciar();
+
+      final payload = await publicadoPor(
+        c,
+        (f) => f.publishReceiptAck(
+          'a' * 64,
+          'b' * 64,
+          motorista.publicKey,
+          passageiro,
+        ),
+      );
+
+      expect(payload['kind'], 20015);
+      final claro = MessageCipher().decryptFrom(
+        motorista,
+        passageiro.publicKey,
+        payload['content'] as String,
+      );
+      expect(jsonDecode(claro!), {'id_recibo': 'b' * 64});
+      expect(payload['content'], isNot(contains('id_recibo')));
+      final tags = tagsDe(payload);
+      expect(tags, anyElement(equals(['e', 'a' * 64])));
+      expect(tags, anyElement(equals(['p', motorista.publicKey])));
+      await c.fechar();
+    });
+
+    group('publishRideRequest e a reputação do passageiro', () {
+      Future<Map<String, dynamic>> conteudoDoVinteMilEUm(
+        Reputation? reputacao,
+      ) async {
+        final c = Cenario();
+        await c.iniciar();
+        final payload = await publicadoPor(
+          c,
+          (f) => f.publishRideRequest(
+            _solicitacaoDeTeste(),
+            passageiro,
+            reputation: reputacao,
+          ),
+        );
+        await c.fechar();
+        expect(payload['kind'], 20001);
+        return jsonDecode(payload['content'] as String)
+            as Map<String, dynamic>;
+      }
+
+      test('sem reputação: a chave reputacao não existe', () async {
+        final conteudo = await conteudoDoVinteMilEUm(null);
+        expect(conteudo.containsKey('reputacao'), isFalse);
+      });
+
+      test('reputação vazia: a chave também é omitida, nunca null', () async {
+        final conteudo = await conteudoDoVinteMilEUm(const Reputation.empty());
+        expect(conteudo.containsKey('reputacao'), isFalse);
+      });
+
+      test('com recibos: a reputação vai em claro, junto do resto', () async {
+        final recibo = ReceiptSignature.issue(
+          identity: motorista,
+          guidCorrida: 'a' * 64,
+          pubkeyAvaliado: passageiro.publicKey,
+          nota: 4,
+          criadoEm: 1790000000,
+          seq: 0,
+        );
+        final reputacao = Reputation(
+          corridas: 1,
+          avaliacoes: 1,
+          media: 4.0,
+          seqProximo: 1,
+          head: recibo.idRecibo,
+          recibos: [recibo],
+        );
+
+        final conteudo = await conteudoDoVinteMilEUm(reputacao);
+
+        expect(conteudo['origin'], isNotNull);
+        expect(conteudo['payment'], 'pix');
+        final enviada = Reputation.fromJson(conteudo['reputacao']);
+        expect(enviada.recibos.single, recibo);
+        expect(enviada.head, recibo.idRecibo);
+      });
     });
   });
 }

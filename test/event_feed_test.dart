@@ -1,8 +1,10 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:dart_nostr/dart_nostr.dart' as nostr;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:passenger/domain/destination_address.dart';
+import 'package:passenger/domain/geohash.dart';
 import 'package:passenger/domain/identity.dart';
 import 'package:passenger/domain/nostr_event.dart';
 import 'package:passenger/domain/passenger_position.dart';
@@ -493,14 +495,87 @@ void main() {
         identidadeDe(novoPar()),
       );
 
-      final enviado = c.transport.conexoes['wss://a.test']!.enviadas
-          .firstWhere((m) => m.startsWith('["EVENT"'));
+      final enviado = c.transport.conexoes['wss://a.test']!.enviadas.firstWhere(
+        (m) => m.startsWith('["EVENT"'),
+      );
       final payload = (jsonDecode(enviado) as List)[1] as Map<String, dynamic>;
 
       expect(payload['kind'], 20001);
+      // Emenda 27: o marcador e as três tags g (5, 4 e 3) da origem.
       expect(payload['tags'], [
         ['t', prototypeMarker],
+        ['g', Geohash.encode(-28.9298, -49.4753, 5)],
+        ['g', Geohash.encode(-28.9298, -49.4753, 4)],
+        ['g', Geohash.encode(-28.9298, -49.4753, 3)],
       ]);
+      await c.fechar();
+    });
+
+    test('as tags g do 20001 são as do vetor de contrato e o content não '
+        'muda', () async {
+      final c = Cenario();
+      await c.iniciar();
+
+      await c.feed.publishRideRequest(
+        RideRequest(
+          origin: origem,
+          destination: destino,
+          payment: PaymentMethod.pix,
+        ),
+        identidadeDe(novoPar()),
+      );
+
+      final enviado = c.transport.conexoes['wss://a.test']!.enviadas.firstWhere(
+        (m) => m.startsWith('["EVENT"'),
+      );
+      final payload = (jsonDecode(enviado) as List)[1] as Map<String, dynamic>;
+      final vetor =
+          (jsonDecode(
+                    File('test/fixtures/geohash_vectors.json')
+                        .readAsStringSync(),
+                  )['pontos']
+                  as List)
+              .cast<Map<String, dynamic>>()
+              .firstWhere((p) => p['nome'] == 'ararangua');
+      final gs = [
+        for (final t in payload['tags'] as List)
+          if ((t as List)[0] == 'g') t[1] as String,
+      ];
+      expect(gs, (vetor['tags_g'] as List).cast<String>());
+      expect(jsonDecode(payload['content'] as String), {
+        'origin': {'lat': -28.9298, 'lon': -49.4753},
+        'destination': {'lat': -28.6721, 'lon': -49.3671},
+        'payment': PaymentMethod.pix.contractValue,
+      });
+      expect(const NostrEventVerifier().isValid(payload), isTrue);
+      await c.fechar();
+    });
+
+    test('origem com coordenada inválida não transmite nada', () async {
+      final c = Cenario();
+      await c.iniciar();
+
+      final relato = await c.feed.publishRideRequest(
+        RideRequest(
+          origin: PassengerPosition(
+            latitude: 91,
+            longitude: 0,
+            capturedAt: DateTime(2026, 9, 20),
+          ),
+          destination: destino,
+          payment: PaymentMethod.pix,
+        ),
+        identidadeDe(novoPar()),
+      );
+
+      expect(relato.eventId, isEmpty);
+      expect(relato.byRelay, isEmpty);
+      expect(
+        c.transport.conexoes['wss://a.test']!.enviadas.where(
+          (m) => m.startsWith('["EVENT"'),
+        ),
+        isEmpty,
+      );
       await c.fechar();
     });
 
@@ -518,8 +593,9 @@ void main() {
         identidadeDe(novoPar()),
       );
 
-      final enviado = c.transport.conexoes['wss://a.test']!.enviadas
-          .firstWhere((m) => m.startsWith('["EVENT"'));
+      final enviado = c.transport.conexoes['wss://a.test']!.enviadas.firstWhere(
+        (m) => m.startsWith('["EVENT"'),
+      );
       final payload = (jsonDecode(enviado) as List)[1] as Map<String, dynamic>;
       final content = jsonDecode(payload['content'] as String) as Map;
 
@@ -529,28 +605,31 @@ void main() {
       await c.fechar();
     });
 
-    test('traduz cada PaymentMethod para o valor de contrato correto', () async {
-      final c = Cenario();
-      await c.iniciar();
+    test(
+      'traduz cada PaymentMethod para o valor de contrato correto',
+      () async {
+        final c = Cenario();
+        await c.iniciar();
 
-      for (final par in [
-        (PaymentMethod.cash, 'dinheiro'),
-        (PaymentMethod.pix, 'pix'),
-        (PaymentMethod.card, 'cartao'),
-      ]) {
-        await c.feed.publishRideRequest(
-          RideRequest(origin: origem, destination: destino, payment: par.$1),
-          identidadeDe(novoPar()),
-        );
-        final enviado = c.transport.conexoes['wss://a.test']!.enviadas
-            .lastWhere((m) => m.startsWith('["EVENT"'));
-        final payload =
-            (jsonDecode(enviado) as List)[1] as Map<String, dynamic>;
-        final content = jsonDecode(payload['content'] as String) as Map;
-        expect(content['payment'], par.$2);
-      }
-      await c.fechar();
-    });
+        for (final par in [
+          (PaymentMethod.cash, 'dinheiro'),
+          (PaymentMethod.pix, 'pix'),
+          (PaymentMethod.card, 'cartao'),
+        ]) {
+          await c.feed.publishRideRequest(
+            RideRequest(origin: origem, destination: destino, payment: par.$1),
+            identidadeDe(novoPar()),
+          );
+          final enviado = c.transport.conexoes['wss://a.test']!.enviadas
+              .lastWhere((m) => m.startsWith('["EVENT"'));
+          final payload =
+              (jsonDecode(enviado) as List)[1] as Map<String, dynamic>;
+          final content = jsonDecode(payload['content'] as String) as Map;
+          expect(content['payment'], par.$2);
+        }
+        await c.fechar();
+      },
+    );
 
     test('sem relay conectado, o relato sai vazio', () async {
       final c = Cenario();
@@ -738,23 +817,20 @@ void main() {
   });
 
   group('EventFeed — acceptedKinds configurável (feature 008)', () {
-    test(
-      'kind fora de acceptedKinds é ignorado, mesmo que válido',
-      () async {
-        final c = Cenario(acceptedKinds: {rideQuoteKind});
-        await c.iniciar();
+    test('kind fora de acceptedKinds é ignorado, mesmo que válido', () async {
+      final c = Cenario(acceptedKinds: {rideQuoteKind});
+      await c.iniciar();
 
-        c.entregar(eventoAssinado(autor: novoPar(), kind: 20099));
-        c.entregar(
-          eventoAssinado(autor: novoPar(), kind: rideQuoteKind, content: '{}'),
-        );
-        await c.assentar();
+      c.entregar(eventoAssinado(autor: novoPar(), kind: 20099));
+      c.entregar(
+        eventoAssinado(autor: novoPar(), kind: rideQuoteKind, content: '{}'),
+      );
+      await c.assentar();
 
-        expect(c.feed.current, hasLength(1));
-        expect(c.feed.current.single.kind, rideQuoteKind);
-        await c.fechar();
-      },
-    );
+      expect(c.feed.current, hasLength(1));
+      expect(c.feed.current.single.kind, rideQuoteKind);
+      await c.fechar();
+    });
 
     test('subscriptionRequest lista os acceptedKinds configurados', () {
       final c = Cenario(acceptedKinds: {rideQuoteKind});
@@ -773,18 +849,15 @@ void main() {
           autor: novoPar(),
           kind: rideQuoteKind,
           content: '{}',
-          tags: [prototypeMarkerTag, [
-            'e',
-            'id-da-solicitacao',
-          ]],
+          tags: [
+            prototypeMarkerTag,
+            ['e', 'id-da-solicitacao'],
+          ],
         ),
       );
       await c.assentar();
 
-      expect(
-        c.feed.current.single.referencedEventId,
-        'id-da-solicitacao',
-      );
+      expect(c.feed.current.single.referencedEventId, 'id-da-solicitacao');
       await c.fechar();
     });
   });
@@ -799,7 +872,11 @@ void main() {
           autor: novoPar(),
           kind: rideRouteKind,
           content: '{"points":[[-28.9,-49.4],[-28.8,-49.3]]}',
-          tags: [prototypeMarkerTag, ['e', 'orcamento'], ['p', 'passageiro']],
+          tags: [
+            prototypeMarkerTag,
+            ['e', 'orcamento'],
+            ['p', 'passageiro'],
+          ],
         ),
       );
       await c.assentar();
@@ -810,22 +887,25 @@ void main() {
       await c.fechar();
     });
 
-    test('kind 20011 é ignorado quando fora de acceptedKinds (regra 4)', () async {
-      final c = Cenario(acceptedKinds: {rideQuoteKind});
-      await c.iniciar();
+    test(
+      'kind 20011 é ignorado quando fora de acceptedKinds (regra 4)',
+      () async {
+        final c = Cenario(acceptedKinds: {rideQuoteKind});
+        await c.iniciar();
 
-      c.entregar(
-        eventoAssinado(
-          autor: novoPar(),
-          kind: rideRouteKind,
-          content: '{"points":[[-28.9,-49.4],[-28.8,-49.3]]}',
-        ),
-      );
-      await c.assentar();
+        c.entregar(
+          eventoAssinado(
+            autor: novoPar(),
+            kind: rideRouteKind,
+            content: '{"points":[[-28.9,-49.4],[-28.8,-49.3]]}',
+          ),
+        );
+        await c.assentar();
 
-      expect(c.feed.current, isEmpty);
-      await c.fechar();
-    });
+        expect(c.feed.current, isEmpty);
+        await c.fechar();
+      },
+    );
 
     test('a inscrição lista o kind 20011 quando aceito', () {
       final c = Cenario(acceptedKinds: {rideRouteKind});
@@ -846,7 +926,11 @@ void main() {
           autor: novoPar(),
           kind: rideCancelledKind,
           content: '',
-          tags: [prototypeMarkerTag, ['e', 'orcamento'], ['p', 'passageiro']],
+          tags: [
+            prototypeMarkerTag,
+            ['e', 'orcamento'],
+            ['p', 'passageiro'],
+          ],
         ),
       );
       await c.assentar();
@@ -857,18 +941,25 @@ void main() {
       await c.fechar();
     });
 
-    test('kind 20012 é ignorado quando fora de acceptedKinds (regra 4)', () async {
-      final c = Cenario(acceptedKinds: {rideQuoteKind});
-      await c.iniciar();
+    test(
+      'kind 20012 é ignorado quando fora de acceptedKinds (regra 4)',
+      () async {
+        final c = Cenario(acceptedKinds: {rideQuoteKind});
+        await c.iniciar();
 
-      c.entregar(
-        eventoAssinado(autor: novoPar(), kind: rideCancelledKind, content: ''),
-      );
-      await c.assentar();
+        c.entregar(
+          eventoAssinado(
+            autor: novoPar(),
+            kind: rideCancelledKind,
+            content: '',
+          ),
+        );
+        await c.assentar();
 
-      expect(c.feed.current, isEmpty);
-      await c.fechar();
-    });
+        expect(c.feed.current, isEmpty);
+        await c.fechar();
+      },
+    );
 
     test('a inscrição lista o kind 20012 quando aceito', () {
       final c = Cenario(acceptedKinds: {rideCancelledKind});
@@ -889,7 +980,11 @@ void main() {
           autor: novoPar(),
           kind: rideUnavailableKind,
           content: '',
-          tags: [prototypeMarkerTag, ['e', 'orcamento'], ['p', 'passageiro']],
+          tags: [
+            prototypeMarkerTag,
+            ['e', 'orcamento'],
+            ['p', 'passageiro'],
+          ],
         ),
       );
       await c.assentar();
@@ -900,18 +995,25 @@ void main() {
       await c.fechar();
     });
 
-    test('kind 20006 é ignorado quando fora de acceptedKinds (regra 4)', () async {
-      final c = Cenario(acceptedKinds: {rideQuoteKind});
-      await c.iniciar();
+    test(
+      'kind 20006 é ignorado quando fora de acceptedKinds (regra 4)',
+      () async {
+        final c = Cenario(acceptedKinds: {rideQuoteKind});
+        await c.iniciar();
 
-      c.entregar(
-        eventoAssinado(autor: novoPar(), kind: rideUnavailableKind, content: ''),
-      );
-      await c.assentar();
+        c.entregar(
+          eventoAssinado(
+            autor: novoPar(),
+            kind: rideUnavailableKind,
+            content: '',
+          ),
+        );
+        await c.assentar();
 
-      expect(c.feed.current, isEmpty);
-      await c.fechar();
-    });
+        expect(c.feed.current, isEmpty);
+        await c.fechar();
+      },
+    );
 
     test('a inscrição lista o kind 20006 quando aceito', () {
       final c = Cenario(acceptedKinds: {rideUnavailableKind});
@@ -1170,26 +1272,26 @@ void main() {
       feed = Cenario().feed;
     });
 
-    NostrEvent recebido({required String content, String? p, Identity? autor}) =>
-        NostrEvent(
-          id: 'id',
-          authorPublicKey: (autor ?? motorista).publicKey,
-          createdAt: DateTime(2026, 10, 6),
-          kind: rideQuoteKind,
-          content: content,
-          isSignatureValid: true,
-          tags: [
-            ['t', 'tcc-ufsc-caronas'],
-            ['e', 'q'],
-            ['p', p ?? passageiro.publicKey],
-          ],
-        );
-
-    String cifrado(String texto, {Identity? para}) => cifra.encryptFor(
-      motorista,
-      (para ?? passageiro).publicKey,
-      texto,
+    NostrEvent recebido({
+      required String content,
+      String? p,
+      Identity? autor,
+    }) => NostrEvent(
+      id: 'id',
+      authorPublicKey: (autor ?? motorista).publicKey,
+      createdAt: DateTime(2026, 10, 6),
+      kind: rideQuoteKind,
+      content: content,
+      isSignatureValid: true,
+      tags: [
+        ['t', 'tcc-ufsc-caronas'],
+        ['e', 'q'],
+        ['p', p ?? passageiro.publicKey],
+      ],
     );
+
+    String cifrado(String texto, {Identity? para}) =>
+        cifra.encryptFor(motorista, (para ?? passageiro).publicKey, texto);
 
     test('cifrado ao passageiro: devolve o evento com o texto decifrado', () {
       final claro = feed.decrypted(
@@ -1228,7 +1330,10 @@ void main() {
 
       expect(
         feed.decrypted(
-          recebido(content: cifrado('{}', para: outro), p: outro.publicKey),
+          recebido(
+            content: cifrado('{}', para: outro),
+            p: outro.publicKey,
+          ),
           passageiro,
         ),
         isNull,
@@ -1419,8 +1524,7 @@ void main() {
         );
         await c.fechar();
         expect(payload['kind'], 20001);
-        return jsonDecode(payload['content'] as String)
-            as Map<String, dynamic>;
+        return jsonDecode(payload['content'] as String) as Map<String, dynamic>;
       }
 
       test('sem reputação: a chave reputacao não existe', () async {

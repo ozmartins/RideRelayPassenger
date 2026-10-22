@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:dart_nostr/dart_nostr.dart' as nostr;
 
+import 'package:passenger/domain/geohash.dart';
 import 'package:passenger/domain/identity.dart';
 import 'package:passenger/domain/nostr_event.dart';
 import 'package:passenger/domain/received_quote.dart';
@@ -214,27 +215,52 @@ class EventFeed {
   /// [reputation] (emenda 25) é a reputação do próprio passageiro, **em claro**
   /// como o resto do `20001` (exceção da constituição 2.17.0); a chave
   /// `reputacao` só existe quando há recibos — nunca vai `null` nem vazia.
+  ///
+  /// Emenda 27: além do marcador, o evento leva três tags `g` (geohash da
+  /// origem em [kPrecisoesDaTag]) para o motorista filtrar por região. O
+  /// passageiro só publica a tag; não tem raio nem filtro. Origem com
+  /// coordenada inválida não gera evento (relatório vazio), nunca um `20001`
+  /// sem `g` ou com `g` errada.
   Future<PublishReport> publishRideRequest(
     RideRequest request,
     Identity identity, {
     Reputation? reputation,
-  }) => _publish(
-    kind: rideRequestKind,
-    content: jsonEncode({
-      'origin': {
-        'lat': request.origin.latitude,
-        'lon': request.origin.longitude,
-      },
-      'destination': {
-        'lat': request.destination.latitude,
-        'lon': request.destination.longitude,
-      },
-      'payment': request.payment.contractValue,
-      if (reputation != null && !reputation.isEmpty)
-        'reputacao': reputation.toJson(),
-    }),
-    identity: identity,
-  );
+  }) {
+    final List<List<String>> tagsG;
+    try {
+      tagsG = [
+        for (final precisao in kPrecisoesDaTag)
+          [
+            'g',
+            Geohash.encode(
+              request.origin.latitude,
+              request.origin.longitude,
+              precisao,
+            ),
+          ],
+      ];
+    } on ArgumentError {
+      return Future.value(const PublishReport(eventId: '', byRelay: {}));
+    }
+    return _publish(
+      kind: rideRequestKind,
+      content: jsonEncode({
+        'origin': {
+          'lat': request.origin.latitude,
+          'lon': request.origin.longitude,
+        },
+        'destination': {
+          'lat': request.destination.latitude,
+          'lon': request.destination.longitude,
+        },
+        'payment': request.payment.contractValue,
+        if (reputation != null && !reputation.isEmpty)
+          'reputacao': reputation.toJson(),
+      }),
+      identity: identity,
+      extraTags: tagsG,
+    );
+  }
 
   /// Publica uma aceitação de orçamento (`kind: 20003`, emenda 07 do
   /// contrato) assinada por [identity], referenciando [quote] e dirigida ao

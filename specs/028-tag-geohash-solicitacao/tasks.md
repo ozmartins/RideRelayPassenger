@@ -39,7 +39,7 @@
 ## Fase 6: Acabamento
 
 - [x] T011 `flutter analyze` ("No issues found!") e `flutter test` integral, sem testes ignorados
-- [ ] T012 Executar os cenários 1–6 de [quickstart.md](quickstart.md) e relatar o resultado (o 7, ponta a ponta, só com a 027 do motorista pronta)
+- [x] T012 Executar os cenários 1–6 de [quickstart.md](quickstart.md) e relatar o resultado (o 7, ponta a ponta, só com a 027 do motorista pronta)
 
 ## Dependências
 

@@ -36,6 +36,7 @@ O app do motorista não compartilha código; estes itens MUST ser idênticos nos
 - Contratos de eventos em `specs/*/contracts/` (principalmente `specs/002-nostr-relay-connection/contracts/nostr-events.md`, com emendas numeradas)
 - `lib/shared/default_relays.dart`
 - `test/fixtures/receipt_vectors.json` (vetor de contrato dos recibos; gerado no motorista e copiado byte a byte — `diff` sem saída)
+- `test/fixtures/geohash_vectors.json` (vetor do geohash da tag `g` do `20001`, emenda 27; gerado no motorista e copiado byte a byte — `diff` sem saída). Todo `20001` leva `["t", ...]` e três tags `g` (5, 4 e 3 caracteres) da origem, calculadas em `lib/domain/geohash.dart`; o passageiro só publica a tag, não tem raio nem filtro.
 - Recibo recebido só vale se o `guid_corrida` for de um orçamento que este passageiro **recebeu do avaliador** (`ReceivedQuoteStore.byId`, passado ao `ReceiptService` como `isKnownRide`; emenda 26): a consulta usa só o registro local, nunca dados do recibo. Quem negociou ainda pode emitir recibo de corrida que não houve (contrato 1.9).
 - Marcador `["t", "tcc-ufsc-caronas"]` em `lib/shared/prototype_marker.dart` (filtro `#t` na inscrição; não é mecanismo de segurança)
 

@@ -50,5 +50,5 @@ O desenvolvimento segue spec-kit: cada feature tem `specs/NNN-nome/` (spec, plan
 
 ## Observações
 
-- `assets/ors_api_key.txt` é a chave do OpenRouteService embutida no app (decisão consciente do autor); `--dart-define=ORS_API_KEY=` tem precedência.
+- A chave do OpenRouteService não é versionada (o histórico foi reescrito para removê-la): vem só de `--dart-define=ORS_API_KEY=` no build; sem ela a rota cai no fallback.
 - Desinstalar o app destrói a identidade (chave no Android Keystore).

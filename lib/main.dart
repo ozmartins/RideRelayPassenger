@@ -32,11 +32,9 @@ import 'package:passenger/services/secure_store.dart';
 import 'package:passenger/services/subscription_request.dart';
 import 'package:passenger/shared/app_info.dart';
 import 'package:passenger/screens/identidade_visual.dart';
-import 'package:passenger/services/ors_api_key.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await OrsApiKey.load();
   // Canal entre a interface e o serviço em segundo plano (feature 026).
   ForegroundTaskBackgroundService.initCommunicationPort();
   runApp(const CorridasPassengerApp());

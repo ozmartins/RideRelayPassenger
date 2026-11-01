@@ -52,8 +52,8 @@ O app consulta três serviços públicos de terceiros, além dos relays:
 | Photon (komoot) | busca de endereço do destino |
 | OpenRouteService | cálculo da rota (perfil `driving-car`) |
 
-A chave do OpenRouteService vem embutida em `assets/ors_api_key.txt` (decisão consciente do autor);
-`--dart-define=ORS_API_KEY=<chave>` tem precedência.
+A chave do OpenRouteService não faz parte do repositório: crie a sua em openrouteservice.org e passe-a no
+build com `--dart-define=ORS_API_KEY=<chave>`. Sem chave, a rota cai no fallback.
 
 > **Desinstalar o aplicativo destrói a identidade.** A chave privada vive só no armazenamento
 > protegido do aparelho (Android Keystore). Ao reinstalar, uma identidade nova é criada e a anterior

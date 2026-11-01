@@ -29,8 +29,8 @@ abstract class RouteService {
 /// (`https://api.openrouteservice.org`) pelo perfil `driving-car`.
 ///
 /// Único tipo do aplicativo, além do teste deste arquivo, que conhece
-/// `package:open_route_service` (Princípio III). A chave de API vem do arquivo de
-/// configuração `assets/ors_api_key.txt` (`OrsApiKey`).
+/// `package:open_route_service` (Princípio III). A chave de API vem do
+/// `--dart-define=ORS_API_KEY` do build (`OrsApiKey`).
 class OrsRouteService implements RouteService {
   OrsRouteService({String? apiKey, OpenRouteService? client})
     : _client = client ?? _buildClient(apiKey ?? OrsApiKey.value);

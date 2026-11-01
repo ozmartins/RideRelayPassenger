@@ -5,8 +5,9 @@ Aplicativo do **passageiro** do protótipo de corridas P2P sobre Nostr, do TCC
 
 O aplicativo tem uma identidade Nostr própria, conecta-se simultaneamente a vários relays públicos,
 publica e recebe eventos assinados e interopera com o aplicativo do motorista — **sem backend e sem
-que as duas apps se conheçam**: toda a comunicação passa por relays Nostr. Os eventos desta etapa são
-de teste; os formatos de domínio de corridas (oferta, solicitação, mensagem) são trabalho futuro.
+que as duas apps se conheçam**: toda a comunicação passa por relays Nostr. O passageiro informa o
+destino, solicita a corrida, recebe e aceita orçamentos, acompanha o motorista no mapa, conversa com
+ele por mensagens cifradas, avalia a corrida e acumula reputação por recibos assinados.
 
 | | |
 |---|---|
@@ -23,12 +24,36 @@ ser instaladas simultaneamente no mesmo aparelho** — é assim que a interopera
 **O aplicativo exige acesso à internet.** Sem rede ele abre normalmente, explica a falta de conexão e
 reconecta sozinho quando a rede volta.
 
-A tela inicial é uma barra de navegação com duas abas, **Mapa** e **Início**:
+A tela inicial é uma barra de navegação com duas abas, **Mapa** e **Mais**:
 
 | Tela | O que faz |
 |---|---|
-| **Mapa** | Mapa (mosaicos do OpenStreetMap) centrado na posição real do passageiro, com um indicador de posição atualizado continuamente, e um campo de texto para informar o destino ("Para onde você quer ir?"). O destino é texto livre, existe só em memória durante a sessão, e **nunca é publicado em relay** — o widget não tem nenhuma referência a `RelayService`/`EventFeed`. Pede a permissão de localização ao abrir, e mostra mensagem compreensível se ela for negada ou a localização ficar indisponível — sem travar o resto da tela. |
-| **Início** | Resumo das conexões ("3 de 3 relays conectados"), eventos recebidos do mais novo para o mais antigo, e o botão **Publicar teste**, que informa relay a relay se a publicação foi aceita, recusada ou ficou sem resposta. Eventos próprios aparecem como "eu"; os de terceiros, com a chave pública truncada do autor. As ações da barra superior levam a **Meu nome** (nome/apelido de exibição, editável), **Identidade** (chave pública, legível e copiável — a chave privada **nunca** é exibida) e **Relays** (lista, acrescenta e remove relays, com validação de endereço e opção de restaurar a lista padrão quando vazia; a lista sobrevive ao fechamento do app). |
+| **Mapa** | Mapa vetorial (tiles do OpenFreeMap) centrado na posição real do passageiro. Concentra todo o fluxo da corrida: busca de endereço de destino com sugestões (Photon), rota até o destino (OpenRouteService), escolha da forma de pagamento e **Solicitar corrida**; lista de orçamentos recebidos (com a reputação do motorista, separando o **verificado** do **declarado**), aceitação, acompanhamento do motorista a caminho, confirmação de encontro e de chegada ao destino, cancelamento e avaliação ao final. Pede a permissão de localização ao abrir e mostra mensagem compreensível se ela for negada ou a localização ficar indisponível. O **destino nunca é publicado em relay**; a solicitação leva apenas a origem, por meio de tags de geohash. |
+| **Mais** | Estado das conexões ("3 de 3 relays conectados") e o menu: **Meu nome** (nome/apelido de exibição, editável), **Minha identidade** (chave pública, legível e copiável — a chave privada **nunca** é exibida) e **Relays** (lista, acrescenta e remove relays, com validação de endereço, reconexão manual e opção de restaurar a lista padrão; a lista sobrevive ao fechamento do app). |
+
+O estado da corrida (`PassengerRideStatus`), o destino, a corrida aceita, os orçamentos, as avaliações
+e os recibos são persistidos localmente e sobrevivem a um reinício do app.
+
+### Em segundo plano
+
+A conexão com os relays vive num **serviço em primeiro plano do Android**, não na interface, e por
+isso o app continua recebendo mensagens do motorista com a tela fechada e notifica o passageiro. O
+serviço **nunca tem a chave privada**: decide notificar apenas por dados públicos do evento (kind,
+autor, tags), pois o conteúdo das mensagens é cifrado (NIP-44) para o passageiro. A decifração
+acontece só na interface, ao abrir o app.
+
+### Serviços externos
+
+O app consulta três serviços públicos de terceiros, além dos relays:
+
+| Serviço | Uso |
+|---|---|
+| OpenFreeMap | tiles vetoriais do mapa (estilo `positron`) |
+| Photon (komoot) | busca de endereço do destino |
+| OpenRouteService | cálculo da rota (perfil `driving-car`) |
+
+A chave do OpenRouteService vem embutida em `assets/ors_api_key.txt` (decisão consciente do autor);
+`--dart-define=ORS_API_KEY=<chave>` tem precedência.
 
 > **Desinstalar o aplicativo destrói a identidade.** A chave privada vive só no armazenamento
 > protegido do aparelho (Android Keystore). Ao reinstalar, uma identidade nova é criada e a anterior
@@ -37,9 +62,9 @@ A tela inicial é uma barra de navegação com duas abas, **Mapa** e **Início**
 
 ## Pré-requisitos
 
-- **Flutter 3.47.4** (canal stable) com **Dart 3.13.3** — versão usada na validação.
+- **Flutter 3.47.x** (canal stable) com **Dart ^3.13.3** (`environment.sdk` do `pubspec.yaml`).
 - Android SDK configurado e um emulador ou aparelho Android **com acesso à internet e localização
-  simulável** (a tela de mapa pede a permissão de localização ao abrir).
+  simulável**. O app pede as permissões de localização e de notificação.
 
 Comece verificando o ambiente:
 
@@ -54,7 +79,6 @@ Apenas o grupo **`[✓] Android toolchain`** precisa estar OK. Falhas nos grupos
 ## Setup
 
 ```bash
-cd Prototipo/passenger
 flutter pub get
 ```
 
@@ -116,6 +140,9 @@ O script publica um evento assinado por uma identidade descartável e o recupera
 separada**, que é a mecânica real da interoperabilidade. Ele contata relays reais de propósito, e por
 isso vive em `tool/` e não em `test/`.
 
+`tool/publish_test_message.dart` também contata relays reais: publica uma mensagem "do motorista"
+para validar a notificação em segundo plano (veja o cabeçalho do script para os argumentos).
+
 ## Medir o tempo de inicialização
 
 ```bash
@@ -123,35 +150,37 @@ flutter run --profile --trace-startup
 cat build/start_up_info.json
 ```
 
-`timeToFirstFrameMicros` deve ficar abaixo de 3 s. Medição de referência:
-**74,5 ms** (74539 µs) no emulador `Pixel_6_API34_1` (Android 14, API 34, x86_64).
+`timeToFirstFrameMicros` deve ficar abaixo de 3 s. A medição de referência (74,5 ms no emulador
+`Pixel_6_API34_1`) é da base inicial do app (feature 001), anterior ao mapa e ao serviço em segundo
+plano; refaça-a antes de citar o número.
 
 ## Estrutura do projeto
 
 ```text
 lib/
-├── main.dart          # ponto de entrada: compõe as dependências reais e o widget raiz
+├── main.dart          # raiz de composição: único lugar que escolhe as implementações reais
 ├── domain/            # entidades com tipos próprios — nunca importam dart_nostr
-│   ├── identity.dart              # par de chaves; toString nunca expõe a chave privada
-│   ├── relay.dart                 # relay e seu estado de conexão
-│   ├── nostr_event.dart           # evento recebido, já verificado
-│   ├── passenger_position.dart    # posição atual do passageiro (só em memória)
-│   └── destination_address.dart   # destino informado como texto livre (só em memória)
-├── services/          # único lugar que importa bibliotecas de terceiros
-│   ├── identity_service.dart          # cria/recupera a identidade no Keystore
-│   ├── relay_service.dart             # conexões, estados, reconexão automática, inscrições
-│   ├── event_feed.dart                # recepção, verificação, deduplicação, publicação
-│   ├── event_verifier.dart            # verificação de assinatura (recalcula o id)
-│   ├── relay_repository.dart          # persistência da lista de relays
-│   ├── name_service.dart              # persistência do nome/apelido de exibição
-│   ├── location_service.dart          # abstração de acesso à localização (injetável)
-│   └── geolocator_location_service.dart  # implementação real sobre geolocator
-├── screens/           # telas: mapa, principal, nome, identidade, relays
-└── shared/            # identidade visual, lista padrão de relays, marcador do protótipo
+│   ├── identity.dart, relay.dart, nostr_event.dart     # identidade, relay e evento verificado
+│   ├── ride_request.dart, received_quote.dart, accepted_ride.dart   # solicitação, orçamento, corrida
+│   ├── passenger_ride_status.dart                      # estado único da corrida
+│   ├── receipt.dart, reputation.dart, reputation_view.dart          # recibos e reputação
+│   ├── geohash.dart                                    # tags g da origem do kind 20001
+│   └── ...                                             # posição, destino, rota, pagamento, avaliação
+├── services/          # lógica e integrações; único lugar que importa dart_nostr
+│   ├── relay_service.dart, relay_hub.dart, relay_transport.dart   # conexões e reconexão
+│   ├── event_feed.dart, event_verifier.dart            # recepção, verificação, deduplicação, publicação
+│   ├── nip44.dart, message_cipher.dart                 # cifra das mensagens do motorista
+│   ├── receipt_service.dart, receipt_store.dart, reputation_verifier.dart   # recibos e reputação
+│   ├── geocoding_service.dart, route_service.dart, location_service.dart    # Photon, ORS, GPS
+│   ├── *_store.dart                                    # persistência local (SharedPreferences/sqflite)
+│   └── background/                                     # serviço em primeiro plano (feature 026)
+├── screens/           # telas e modais: mapa, mais, nome, identidade, relays, orçamentos, avaliação
+└── shared/            # lista padrão de relays, marcador do protótipo, informações do app
 
-test/                  # testes, com dublês em test/support/
-tool/check_relays.dart # sonda de disponibilidade dos relays padrão
-android/               # projeto Android gerado (applicationId br.ufsc.tcc.corridas.passenger)
+specs/                 # uma pasta por feature (spec-kit): spec, plan, tasks, contratos
+test/                  # testes, com dublês em test/support/ e vetores em test/fixtures/
+tool/                  # sondas que contatam relays reais (check_relays, publish_test_message)
+android/               # projeto Android (applicationId br.ufsc.tcc.corridas.passenger)
 ```
 
 Tipos de `dart_nostr` ficam confinados a `services/`: domínio e telas usam tipos próprios. Trocar de
@@ -162,18 +191,20 @@ biblioteca não deveria tocar na interface.
 O protótipo **não tem backend**. As apps do motorista e do passageiro não se conhecem e não trocam
 pacotes diretamente: toda a comunicação acontece publicando e assinando eventos em relays Nostr.
 
-A consequência prática é que **não existe lugar para lógica compartilhada**. Três coisas precisam ser
-idênticas nas duas apps, e mudar uma de um lado sem o outro é defeito:
+A consequência prática é que **não existe lugar para lógica compartilhada**. Estes itens precisam ser
+idênticos nas duas apps e mudar de um lado sem o outro é defeito:
 
 | O que | Onde, no passageiro |
 |---|---|
-| Contrato de eventos | documento de contrato de eventos, mantido igual nas duas apps |
+| Contrato de eventos (com emendas numeradas) | `specs/*/contracts/`, principalmente `specs/002-nostr-relay-connection/contracts/nostr-events.md` |
 | Lista padrão de relays | `lib/shared/default_relays.dart` |
 | Marcador do protótipo `tcc-ufsc-caronas` | `lib/shared/prototype_marker.dart` |
+| Vetor de contrato dos recibos | `test/fixtures/receipt_vectors.json` (gerado no motorista, copiado byte a byte) |
+| Vetor do geohash da tag `g` | `test/fixtures/geohash_vectors.json` (gerado no motorista, copiado byte a byte) |
 
 ### Por que o marcador existe
 
-O evento de teste usava `kind: 1` (retirado do contrato de eventos), a nota de texto padrão do
+O evento de teste da primeira etapa usava `kind: 1` (retirado do contrato de eventos), a nota de texto padrão do
 Nostr — aceita por qualquer relay, mas também usada por toda a rede social. Inscrever-se em `kind: 1`
 sem filtro entregava o tráfego público inteiro: medido em ~500 eventos alheios por relay no primeiro segundo. O marcador
 `["t", "tcc-ufsc-caronas"]` e o filtro `#t` na inscrição isolam o tráfego do protótipo.
@@ -188,3 +219,12 @@ aplicação** — a separação é convenção combinada entre as partes, não g
 sem recalcular o `id` a partir do conteúdo. Um evento com conteúdo adulterado e `id`/`sig` originais
 passaria nessa checagem. `NostrEventVerifier` recalcula o identificador canônico antes de verificar, e
 há teste específico para esse caso.
+
+## Processo de desenvolvimento
+
+O desenvolvimento segue o [spec-kit](https://github.com/github/spec-kit): cada feature tem uma pasta
+`specs/NNN-nome/` (spec, plan, research, data-model, tasks, quickstart) e a feature ativa está em
+`.specify/feature.json`. A constituição do projeto (`.specify/memory/constitution.md`) é normativa:
+a chave privada nunca vaza, código de assinatura e verificação nasce com teste, dependência nova exige
+decisão registrada e o contrato do evento vem antes do código. Orientações para o Claude Code estão em
+`CLAUDE.md`.

@@ -122,8 +122,8 @@ class _AuthorizingHttpClient extends http.BaseClient {
   void close() => _inner.close();
 }
 
-/// Registra no log do fluxo as falhas do serviço decorado (openrouteservice),
-/// sem alterar o resultado nem a exceção.
+/// Registra no log do fluxo toda chamada ao serviço decorado (openrouteservice),
+/// com sucesso ou não, sem alterar o resultado nem a exceção.
 class LoggingRouteService implements RouteService {
   LoggingRouteService(this._inner, this._log);
 
@@ -134,12 +134,13 @@ class LoggingRouteService implements RouteService {
   Future<RouteResult> route({
     required LatLng origin,
     required LatLng destination,
-  }) async {
-    try {
-      return await _inner.route(origin: origin, destination: destination);
-    } on Object catch (erro) {
-      _log.externoFalhou('ors', erro);
-      rethrow;
-    }
-  }
+  }) => _log.chamadaExterna(
+    'ors',
+    'rota',
+    () => _inner.route(origin: origin, destination: destination),
+    lat: origin.latitude,
+    lon: origin.longitude,
+    lat2: destination.latitude,
+    lon2: destination.longitude,
+  );
 }

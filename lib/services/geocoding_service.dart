@@ -140,7 +140,8 @@ class GeocodingFailure implements Exception {
   String toString() => 'Falha na busca de endereço: $cause';
 }
 
-/// Registra no log do fluxo as falhas da Photon, sem alterar o resultado.
+/// Registra no log do fluxo toda chamada à Photon, com sucesso ou não, sem
+/// alterar o resultado nem a exceção.
 class LoggingGeocodingService implements GeocodingService {
   LoggingGeocodingService(this._inner, this._log);
 
@@ -148,12 +149,11 @@ class LoggingGeocodingService implements GeocodingService {
   final FlowLog _log;
 
   @override
-  Future<List<AddressSuggestion>> search(String text) async {
-    try {
-      return await _inner.search(text);
-    } on Object catch (erro) {
-      _log.externoFalhou('photon', erro);
-      rethrow;
-    }
-  }
+  Future<List<AddressSuggestion>> search(String text) => _log.chamadaExterna(
+    'photon',
+    'geocodificacao',
+    () => _inner.search(text),
+    endereco: text,
+    tamanho: (sugestoes) => sugestoes.length,
+  );
 }

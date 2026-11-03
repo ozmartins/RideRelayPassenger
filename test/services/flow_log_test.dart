@@ -97,6 +97,68 @@ void main() {
     });
   });
 
+  group('texto livre e coordenadas (erro, endereco, lat/lon)', () {
+    Map<String, Object?> linha({
+      String? erro,
+      String? endereco,
+      double? lat,
+      double? lon,
+    }) => FlowLine.build(
+      t: 1,
+      papel: 'x',
+      exec: 'e',
+      iso: 'ui',
+      comp: 'externo',
+      op: 'externo.falha',
+      res: 'falha',
+      erro: erro,
+      endereco: endereco,
+      lat: lat,
+      lon: lon,
+    );
+
+    test('grava erro, endereço e coordenadas como vieram', () {
+      final l = linha(
+        erro: 'ClientException: HTTP 429 em photon.komoot.io',
+        endereco: 'Rua das Flores, 123',
+        lat: -27.59,
+        lon: -48.54,
+      );
+      expect(l['erro'], 'ClientException: HTTP 429 em photon.komoot.io');
+      expect(l['endereco'], 'Rua das Flores, 123');
+      expect(l['lat'], -27.59);
+      expect(l['lon'], -48.54);
+    });
+
+    test('oculta chave privada, credenciais e a chave da ORS no texto', () {
+      FlowLine.segredos.add('ors-chave-super-secreta');
+      addTearDown(FlowLine.segredos.clear);
+      final privada = 'ab' * 32;
+      final l = linha(
+        erro:
+            'falha em https://x/?api_key=ors-chave-super-secreta '
+            'Authorization: Bearer abc $privada nsec1qqqqqqqq',
+      );
+      final texto = l['erro'] as String;
+      expect(texto, isNot(contains('ors-chave-super-secreta')));
+      expect(texto, isNot(contains('Bearer abc')));
+      expect(texto, isNot(contains(privada)));
+      expect(texto, isNot(contains('nsec1qqqq')));
+      expect(texto, contains('[oculto]'));
+    });
+
+    test(
+      'limita o texto, tira quebras de linha e ignora coordenada inválida',
+      () {
+        final l = linha(erro: 'a\nb' * 200, lat: 95, lon: 10);
+        expect((l['erro'] as String).contains('\n'), isFalse);
+        expect((l['erro'] as String).length, lessThanOrEqualTo(301));
+        expect(l.containsKey('lat'), isFalse);
+        expect(l.containsKey('lon'), isFalse);
+      },
+    );
+  });
+
   group('EventFeed com log', () {
     late FakeTransport transport;
     late RelayService relays;
@@ -262,7 +324,17 @@ void main() {
       expect(motivoExterno(Exception('Rua das Flores 123')), 'erro');
     });
 
-    test('registra externo.falha só com serviço e código, e relança', () async {
+    test('busca com sucesso também é registrada, com a contagem', () async {
+      final log = MemoryFlowLog();
+      final r = await LoggingGeocodingService(_FotonOk(), log).search('Rua X');
+      expect(r, isEmpty);
+      expect(log.ops, ['externo.chamada']);
+      expect(log.linhas.single['res'], 'ok');
+      expect(log.linhas.single['endereco'], 'Rua X');
+      expect(log.linhas.single['n'], 0);
+    });
+
+    test('registra externo.falha com o texto do erro, o endereço e as coordenadas, e relança', () async {
       final log = MemoryFlowLog();
       final rota = LoggingRouteService(_RotaQueFalha(), log);
       await expectLater(
@@ -277,10 +349,23 @@ void main() {
         foto.search('Rua das Flores 123'),
         throwsA(isA<GeocodingFailure>()),
       );
-      expect([for (final l in log.linhas) l['ext']], ['ors', 'photon']);
+      expect(log.ops, [
+        'externo.chamada',
+        'externo.falha',
+        'externo.chamada',
+        'externo.falha',
+      ]);
+      expect(
+        [for (final l in log.linhas) l['ext']],
+        ['ors', 'ors', 'photon', 'photon'],
+      );
+      expect(log.linhas.first['ms'], isA<int>());
       expect(log.linhas.first['motivo'], 'http429');
-      expect(log.texto, isNot(contains('Flores')));
-      expect(log.texto, isNot(contains('-27.5')));
+      expect(log.linhas.first['erro'], contains('HTTP 429'));
+      expect(log.linhas.first['lat'], -27.5);
+      expect(log.linhas.first['lon2'], -48.6);
+      expect(log.linhas.last['endereco'], 'Rua das Flores 123');
+      expect(log.linhas.last['erro'], contains('timeout'));
     });
   });
 }
@@ -297,4 +382,9 @@ class _FotonQueFalha implements GeocodingService {
   @override
   Future<List<AddressSuggestion>> search(String text) async =>
       throw const GeocodingFailure('timeout');
+}
+
+class _FotonOk implements GeocodingService {
+  @override
+  Future<List<AddressSuggestion>> search(String text) async => [];
 }

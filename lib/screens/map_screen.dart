@@ -759,11 +759,24 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// Toque no botão de chegada ao destino: publica a confirmação e, em
   /// falha, mostra a mensagem junto ao botão.
   /// Registra uma ação do usuário no log do fluxo (feature 029).
-  void _acao(String nome, {String? guid}) => widget.eventFeed.log.registrar(
+  void _acao(
+    String nome, {
+    String? guid,
+    String? endereco,
+    double? lat,
+    double? lon,
+    double? lat2,
+    double? lon2,
+  }) => widget.eventFeed.log.registrar(
     comp: 'tela',
     op: 'tela.acao',
     motivo: nome,
     guid: guid,
+    endereco: endereco,
+    lat: lat,
+    lon: lon,
+    lat2: lat2,
+    lon2: lon2,
   );
 
   Future<void> _aoTocarConfirmarDestino() async {
@@ -1192,7 +1205,12 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// — sempre a partir do `displayText` e das coordenadas de uma
   /// [AddressSuggestion] selecionada, nunca do texto bruto digitado.
   void _selecionarSugestao(AddressSuggestion sugestao) {
-    _acao('selecionar_destino');
+    _acao(
+      'selecionar_destino',
+      endereco: sugestao.displayText,
+      lat: sugestao.latitude,
+      lon: sugestao.longitude,
+    );
     _debounce?.cancel();
     final destino = DestinationAddress(
       sugestao.displayText,
@@ -1231,7 +1249,14 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// `aguardandoOrcamentos` (FR-003 da feature 014) — só chamado a partir
   /// de `inicial` (o botão só existe fora do fluxo de uma corrida ativa).
   Future<void> _solicitarCorrida() async {
-    _acao('solicitar_corrida');
+    _acao(
+      'solicitar_corrida',
+      endereco: _destino?.text,
+      lat: _posicao?.latitude,
+      lon: _posicao?.longitude,
+      lat2: _destino?.latitude,
+      lon2: _destino?.longitude,
+    );
     if (_destino == null) {
       _avisar('Escolha um destino antes de solicitar a corrida.');
       return;

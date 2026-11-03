@@ -7,6 +7,7 @@ import 'package:passenger/screens/home_screen.dart';
 import 'package:passenger/screens/map_screen.dart';
 import 'package:passenger/screens/name_screen.dart';
 import 'package:passenger/services/accepted_ride_store.dart';
+import 'package:passenger/services/ors_api_key.dart';
 import 'package:passenger/services/flow_log.dart';
 import 'package:passenger/services/flow_log_file.dart';
 import 'package:passenger/services/destination_store.dart';
@@ -37,6 +38,8 @@ import 'package:passenger/screens/identidade_visual.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  // A chave da ORS nunca pode aparecer em texto livre do log (FR-052).
+  if (OrsApiKey.value.isNotEmpty) FlowLine.segredos.add(OrsApiKey.value);
   // Canal entre a interface e o serviço em segundo plano (feature 026).
   ForegroundTaskBackgroundService.initCommunicationPort();
   runApp(const CorridasPassengerApp());

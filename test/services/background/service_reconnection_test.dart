@@ -55,7 +55,10 @@ void main() {
     );
     // A interface é avisada da queda.
     expect(
-      naUi.whereType<ServiceRelaysChanged>().last.relays
+      naUi
+          .whereType<ServiceRelaysChanged>()
+          .last
+          .relays
           .firstWhere((r) => r.url == url)
           .status,
       RelayStatus.unavailable,
@@ -79,7 +82,11 @@ void main() {
     final e = eventoAssinado(
       autor: motorista,
       kind: 20005,
-      tags: [prototypeMarkerTag, ['p', 'x'], ['e', 'q']],
+      tags: [
+        prototypeMarkerTag,
+        ['p', 'x'],
+        ['e', 'q'],
+      ],
     );
     segunda.emitir(mensagemEvent(e));
     await pump();

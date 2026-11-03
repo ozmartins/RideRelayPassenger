@@ -23,10 +23,7 @@ void main() {
     });
 
     test('instâncias com driverPubkey diferente não são iguais', () {
-      final b = AcceptedRide(
-        quoteId: _base.quoteId,
-        driverPubkey: 'driver-2',
-      );
+      final b = AcceptedRide(quoteId: _base.quoteId, driverPubkey: 'driver-2');
 
       expect(_base, isNot(b));
     });

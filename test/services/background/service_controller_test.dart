@@ -87,10 +87,7 @@ void main() {
 
     setUp(() async {
       canal = MemoryChannelPair();
-      hub = RemoteRelayHub(
-        canal.ui,
-        helloRetry: const Duration(hours: 1),
-      );
+      hub = RemoteRelayHub(canal.ui, helloRetry: const Duration(hours: 1));
       service = _FakeService(canal.ui);
       controller = ServiceController(service: service, hub: hub);
       noServico = [];
@@ -98,9 +95,7 @@ void main() {
         noServico.add(m);
         // O "serviço" responde ao hello, como o núcleo real.
         if (m is ServiceHello) {
-          canal.service.send(
-            const ServiceHelloAck(relays: [], pending: []),
-          );
+          canal.service.send(const ServiceHelloAck(relays: [], pending: []));
         }
       });
       await controller.start();
@@ -172,15 +167,18 @@ void main() {
       expect(service.running, isTrue);
     });
 
-    test('sem permissão de notificação o serviço não sobrevive à saída', () async {
-      service.permitted = false;
-      expect(await controller.ensureNotificationPermission(), isFalse);
-      controller.update(_comCorrida);
-      await controller.onForeground(false);
-      await pump();
-      expect(service.stops, 1);
-      expect(service.permissionRequests, 1);
-    });
+    test(
+      'sem permissão de notificação o serviço não sobrevive à saída',
+      () async {
+        service.permitted = false;
+        expect(await controller.ensureNotificationPermission(), isFalse);
+        controller.update(_comCorrida);
+        await controller.onForeground(false);
+        await pump();
+        expect(service.stops, 1);
+        expect(service.permissionRequests, 1);
+      },
+    );
 
     test('a permissão só é pedida se ainda não foi dada', () async {
       expect(await controller.ensureNotificationPermission(), isTrue);

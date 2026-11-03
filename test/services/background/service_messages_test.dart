@@ -35,7 +35,10 @@ void main() {
                 const ServiceHelloAck(
                   relays: [relay],
                   pending: [
-                    PendingRelayMessage(relayUrl: 'wss://nos.lol', payload: '["EVENT"]'),
+                    PendingRelayMessage(
+                      relayUrl: 'wss://nos.lol',
+                      payload: '["EVENT"]',
+                    ),
                   ],
                 ),
               )!
@@ -55,14 +58,23 @@ void main() {
         driverPubkey: 'd',
         appInForeground: true,
       );
-      expect((_volta(const ServiceStateUpdate(s))! as ServiceStateUpdate).state, s);
+      expect(
+        (_volta(const ServiceStateUpdate(s))! as ServiceStateUpdate).state,
+        s,
+      );
     });
 
     test('start, addRelay, removeRelay, relaysChanged', () {
-      expect((_volta(const ServiceStart([relay]))! as ServiceStart).relays, [relay]);
-      expect((_volta(const ServiceAddRelay(relay))! as ServiceAddRelay).relay, relay);
+      expect((_volta(const ServiceStart([relay]))! as ServiceStart).relays, [
+        relay,
+      ]);
       expect(
-        (_volta(const ServiceRemoveRelay('wss://a'))! as ServiceRemoveRelay).url,
+        (_volta(const ServiceAddRelay(relay))! as ServiceAddRelay).relay,
+        relay,
+      );
+      expect(
+        (_volta(const ServiceRemoveRelay('wss://a'))! as ServiceRemoveRelay)
+            .url,
         'wss://a',
       );
       expect(
@@ -73,18 +85,29 @@ void main() {
     });
 
     test('subscribe, broadcast e message', () {
-      final sub = _volta(
-        const ServiceSubscribe(subscriptionId: 'corridas', request: '["REQ"]'),
-      )! as ServiceSubscribe;
+      final sub =
+          _volta(
+                const ServiceSubscribe(
+                  subscriptionId: 'corridas',
+                  request: '["REQ"]',
+                ),
+              )!
+              as ServiceSubscribe;
       expect(sub.subscriptionId, 'corridas');
       expect(sub.request, '["REQ"]');
       expect(
-        (_volta(const ServiceBroadcast('["EVENT"]'))! as ServiceBroadcast).message,
+        (_volta(const ServiceBroadcast('["EVENT"]'))! as ServiceBroadcast)
+            .message,
         '["EVENT"]',
       );
-      final msg = _volta(
-        const ServiceRelayMessage(relayUrl: 'wss://a', payload: '["OK"]'),
-      )! as ServiceRelayMessage;
+      final msg =
+          _volta(
+                const ServiceRelayMessage(
+                  relayUrl: 'wss://a',
+                  payload: '["OK"]',
+                ),
+              )!
+              as ServiceRelayMessage;
       expect(msg.relayUrl, 'wss://a');
       expect(msg.payload, '["OK"]');
     });

@@ -18,7 +18,11 @@ NostrEvent _eventoDe(
   kind: 20002,
   content: content,
   isSignatureValid: true,
-  tags: tags ?? const [['e', 'id-solicitacao']],
+  tags:
+      tags ??
+      const [
+        ['e', 'id-solicitacao'],
+      ],
 );
 
 void main() {
@@ -119,28 +123,19 @@ void main() {
         tags: const [],
       );
 
-      expect(
-        () => ReceivedQuote.fromNostrEvent(evento),
-        throwsFormatException,
-      );
+      expect(() => ReceivedQuote.fromNostrEvent(evento), throwsFormatException);
     });
 
     test('lança FormatException para content que não é JSON', () {
       final evento = _eventoDe('não é json');
 
-      expect(
-        () => ReceivedQuote.fromNostrEvent(evento),
-        throwsFormatException,
-      );
+      expect(() => ReceivedQuote.fromNostrEvent(evento), throwsFormatException);
     });
 
     test('lança FormatException para content sem um campo obrigatório', () {
       final evento = _eventoDe('{"pricePerKm":2.5,"total":25.0}');
 
-      expect(
-        () => ReceivedQuote.fromNostrEvent(evento),
-        throwsFormatException,
-      );
+      expect(() => ReceivedQuote.fromNostrEvent(evento), throwsFormatException);
     });
   });
 }

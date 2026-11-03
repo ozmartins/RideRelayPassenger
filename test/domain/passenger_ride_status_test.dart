@@ -44,18 +44,13 @@ void main() {
       );
     });
 
-    test(
-      'impede aceitar orçamento a partir de orcamentoAceito '
-      '(orçamento tardio, idempotência)',
-      () {
-        expect(
-          PassengerRideRules.canAcceptQuote(
-            PassengerRideStatus.orcamentoAceito,
-          ),
-          isFalse,
-        );
-      },
-    );
+    test('impede aceitar orçamento a partir de orcamentoAceito '
+        '(orçamento tardio, idempotência)', () {
+      expect(
+        PassengerRideRules.canAcceptQuote(PassengerRideStatus.orcamentoAceito),
+        isFalse,
+      );
+    });
   });
 
   group('PassengerRideRules.canNotifyMovement (FR-005)', () {
@@ -77,18 +72,15 @@ void main() {
       );
     });
 
-    test(
-      'impede notificar movimento a partir de motoristaACaminho '
-      '(idempotência)',
-      () {
-        expect(
-          PassengerRideRules.canNotifyMovement(
-            PassengerRideStatus.motoristaACaminho,
-          ),
-          isFalse,
-        );
-      },
-    );
+    test('impede notificar movimento a partir de motoristaACaminho '
+        '(idempotência)', () {
+      expect(
+        PassengerRideRules.canNotifyMovement(
+          PassengerRideStatus.motoristaACaminho,
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('PassengerRideRules.canConfirmMeeting (FR-006, FR-010)', () {
@@ -112,9 +104,7 @@ void main() {
 
     test('impede confirmar encontro a partir de emCorrida', () {
       expect(
-        PassengerRideRules.canConfirmMeeting(
-          PassengerRideStatus.emCorrida,
-        ),
+        PassengerRideRules.canConfirmMeeting(PassengerRideStatus.emCorrida),
         isFalse,
       );
     });
@@ -139,39 +129,31 @@ void main() {
       );
     });
 
-    test(
-      'impede confirmar destino a partir de '
-      'destinoConfirmadoAguardandoAvaliacao',
-      () {
-        expect(
-          PassengerRideRules.canConfirmDestinationArrival(
-            PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
-          ),
-          isFalse,
-        );
-      },
-    );
+    test('impede confirmar destino a partir de '
+        'destinoConfirmadoAguardandoAvaliacao', () {
+      expect(
+        PassengerRideRules.canConfirmDestinationArrival(
+          PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
+        ),
+        isFalse,
+      );
+    });
   });
 
   group('PassengerRideRules.canFinishRating (FR-008)', () {
-    test(
-      'permite concluir avaliação a partir de '
-      'destinoConfirmadoAguardandoAvaliacao',
-      () {
-        expect(
-          PassengerRideRules.canFinishRating(
-            PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
-          ),
-          isTrue,
-        );
-      },
-    );
+    test('permite concluir avaliação a partir de '
+        'destinoConfirmadoAguardandoAvaliacao', () {
+      expect(
+        PassengerRideRules.canFinishRating(
+          PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
+        ),
+        isTrue,
+      );
+    });
 
     test('impede concluir avaliação a partir de emCorrida', () {
       expect(
-        PassengerRideRules.canFinishRating(
-          PassengerRideStatus.emCorrida,
-        ),
+        PassengerRideRules.canFinishRating(PassengerRideStatus.emCorrida),
         isFalse,
       );
     });
@@ -184,32 +166,35 @@ void main() {
     });
   });
 
-  group('PassengerRideRules.canCancelRequest (FR-009/FR-011 da feature 015)', () {
-    test('permite cancelar a partir de aguardandoOrcamentos', () {
-      expect(
-        PassengerRideRules.canCancelRequest(
-          PassengerRideStatus.aguardandoOrcamentos,
-        ),
-        isTrue,
-      );
-    });
+  group(
+    'PassengerRideRules.canCancelRequest (FR-009/FR-011 da feature 015)',
+    () {
+      test('permite cancelar a partir de aguardandoOrcamentos', () {
+        expect(
+          PassengerRideRules.canCancelRequest(
+            PassengerRideStatus.aguardandoOrcamentos,
+          ),
+          isTrue,
+        );
+      });
 
-    test('impede cancelar a partir de inicial', () {
-      expect(
-        PassengerRideRules.canCancelRequest(PassengerRideStatus.inicial),
-        isFalse,
-      );
-    });
+      test('impede cancelar a partir de inicial', () {
+        expect(
+          PassengerRideRules.canCancelRequest(PassengerRideStatus.inicial),
+          isFalse,
+        );
+      });
 
-    test('impede cancelar a partir de orcamentoAceito', () {
-      expect(
-        PassengerRideRules.canCancelRequest(
-          PassengerRideStatus.orcamentoAceito,
-        ),
-        isFalse,
-      );
-    });
-  });
+      test('impede cancelar a partir de orcamentoAceito', () {
+        expect(
+          PassengerRideRules.canCancelRequest(
+            PassengerRideStatus.orcamentoAceito,
+          ),
+          isFalse,
+        );
+      });
+    },
+  );
 
   group('PassengerRideRules.canShowDriverRoute (feature 018)', () {
     test('vale só em emCorrida', () {

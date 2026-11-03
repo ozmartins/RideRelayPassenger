@@ -44,8 +44,10 @@ void main() {
 
     tearDown(() => hub.dispose());
 
-    void responder({List<Relay> relays = const [], List<PendingRelayMessage> pending = const []}) =>
-        canal.service.send(ServiceHelloAck(relays: relays, pending: pending));
+    void responder({
+      List<Relay> relays = const [],
+      List<PendingRelayMessage> pending = const [],
+    }) => canal.service.send(ServiceHelloAck(relays: relays, pending: pending));
 
     test('comandos esperam o serviço responder ao hello, na ordem', () async {
       hub.attach(foreground: true);
@@ -117,19 +119,22 @@ void main() {
       expect(emitidos, isNotEmpty);
     });
 
-    test('mensagens pendentes são reentregues como mensagens normais', () async {
-      final recebidas = <RelayMessage>[];
-      hub.messages.listen(recebidas.add);
-      hub.attach(foreground: true);
-      responder(
-        pending: const [
-          PendingRelayMessage(relayUrl: 'wss://a', payload: '["EVENT"]'),
-        ],
-      );
-      await pump();
-      expect(recebidas.single.url, 'wss://a');
-      expect(recebidas.single.payload, '["EVENT"]');
-    });
+    test(
+      'mensagens pendentes são reentregues como mensagens normais',
+      () async {
+        final recebidas = <RelayMessage>[];
+        hub.messages.listen(recebidas.add);
+        hub.attach(foreground: true);
+        responder(
+          pending: const [
+            PendingRelayMessage(relayUrl: 'wss://a', payload: '["EVENT"]'),
+          ],
+        );
+        await pump();
+        expect(recebidas.single.url, 'wss://a');
+        expect(recebidas.single.payload, '["EVENT"]');
+      },
+    );
 
     test('um serviço reiniciado recebe de novo as inscrições', () async {
       hub.subscribe('corridas', '["REQ"]');
@@ -146,7 +151,9 @@ void main() {
     test('start mostra a lista como "conectando" e pede ao serviço', () async {
       hub.attach(foreground: true);
       responder();
-      await hub.start(const [Relay(url: 'wss://a', status: RelayStatus.connected)]);
+      await hub.start(const [
+        Relay(url: 'wss://a', status: RelayStatus.connected),
+      ]);
       await pump();
       expect(hub.current.single.status, RelayStatus.connecting);
       expect(noServico.whereType<ServiceStart>(), hasLength(1));
@@ -246,42 +253,45 @@ void main() {
       expect(notifier.notified, isEmpty);
     });
 
-    test('app fechado: notifica, retém e entrega ao reabrir sem duplicar', () async {
-      canal.ui.send(
-        ServiceStateUpdate(
-          ServiceState(
-            passengerPubkey: passageiro.public,
-            rideStatus: PassengerRideStatus.aguardandoOrcamentos,
-            requestId: 'req-1',
+    test(
+      'app fechado: notifica, retém e entrega ao reabrir sem duplicar',
+      () async {
+        canal.ui.send(
+          ServiceStateUpdate(
+            ServiceState(
+              passengerPubkey: passageiro.public,
+              rideStatus: PassengerRideStatus.aguardandoOrcamentos,
+              requestId: 'req-1',
+            ),
           ),
-        ),
-      );
-      // A interface sai de vista: o serviço passa a notificar e reter.
-      hub.attach(foreground: false);
-      await pump();
-      canal.ui.send(
-        ServiceStateUpdate(
-          ServiceState(
-            passengerPubkey: passageiro.public,
-            rideStatus: PassengerRideStatus.aguardandoOrcamentos,
-            requestId: 'req-1',
-            appInForeground: false,
+        );
+        // A interface sai de vista: o serviço passa a notificar e reter.
+        hub.attach(foreground: false);
+        await pump();
+        canal.ui.send(
+          ServiceStateUpdate(
+            ServiceState(
+              passengerPubkey: passageiro.public,
+              rideStatus: PassengerRideStatus.aguardandoOrcamentos,
+              requestId: 'req-1',
+              appInForeground: false,
+            ),
           ),
-        ),
-      );
-      await pump();
+        );
+        await pump();
 
-      final e = orcamento('dois');
-      transport.conexoes['wss://nos.lol']!.emitir(mensagemEvent(e));
-      await pump();
-      expect(notifier.notified, hasLength(1));
-      final antes = feed.current.where((x) => x.id == e['id']).length;
+        final e = orcamento('dois');
+        transport.conexoes['wss://nos.lol']!.emitir(mensagemEvent(e));
+        await pump();
+        expect(notifier.notified, hasLength(1));
+        final antes = feed.current.where((x) => x.id == e['id']).length;
 
-      // Reabre: handshake em primeiro plano; a retida não duplica no feed.
-      hub.attach(foreground: true);
-      await pump();
-      expect(feed.current.where((x) => x.id == e['id']).length, antes);
-      expect(notifier.cancelAllCalls, greaterThanOrEqualTo(1));
-    });
+        // Reabre: handshake em primeiro plano; a retida não duplica no feed.
+        hub.attach(foreground: true);
+        await pump();
+        expect(feed.current.where((x) => x.id == e['id']).length, antes);
+        expect(notifier.cancelAllCalls, greaterThanOrEqualTo(1));
+      },
+    );
   });
 }

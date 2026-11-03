@@ -68,7 +68,8 @@ void main() {
       expect(
         alcancados.intersection(_proibidos),
         isEmpty,
-        reason: 'o serviço importaria (direta ou indiretamente) código de segredo',
+        reason:
+            'o serviço importaria (direta ou indiretamente) código de segredo',
       );
     });
 
@@ -85,69 +86,74 @@ void main() {
     });
   });
 
-  test('o tráfego do canal nunca carrega a chave privada nem texto decifrado',
-      () async {
-    final passageiro = novoPar();
-    final motorista = novoPar();
-    final transport = FakeTransport({});
-    final canal = MemoryChannelPair();
-    final store = InMemoryKeyValueStore();
-    final core = RelayHostCore(
-      relays: RelayService(transport: transport),
-      channel: canal.service,
-      stateStore: ServiceStateStore(store),
-      relayRepository: RelayRepository(store),
-      notifier: FakeRideMessageNotifier(),
-    );
-    final hub = RemoteRelayHub(
-      canal.ui,
-      helloRetry: const Duration(hours: 1),
-    );
-    await core.start(restoreState: false);
-    await hub.start(const [Relay(url: 'wss://nos.lol')]);
-    hub.attach(foreground: false);
-    await pump();
-    canal.ui.send(
-      ServiceStateUpdate(
-        ServiceState(
-          passengerPubkey: passageiro.public,
-          rideStatus: PassengerRideStatus.emCorrida,
-          quoteId: 'q1',
-          driverPubkey: motorista.public,
+  test(
+    'o tráfego do canal nunca carrega a chave privada nem texto decifrado',
+    () async {
+      final passageiro = novoPar();
+      final motorista = novoPar();
+      final transport = FakeTransport({});
+      final canal = MemoryChannelPair();
+      final store = InMemoryKeyValueStore();
+      final core = RelayHostCore(
+        relays: RelayService(transport: transport),
+        channel: canal.service,
+        stateStore: ServiceStateStore(store),
+        relayRepository: RelayRepository(store),
+        notifier: FakeRideMessageNotifier(),
+      );
+      final hub = RemoteRelayHub(
+        canal.ui,
+        helloRetry: const Duration(hours: 1),
+      );
+      await core.start(restoreState: false);
+      await hub.start(const [Relay(url: 'wss://nos.lol')]);
+      hub.attach(foreground: false);
+      await pump();
+      canal.ui.send(
+        ServiceStateUpdate(
+          ServiceState(
+            passengerPubkey: passageiro.public,
+            rideStatus: PassengerRideStatus.emCorrida,
+            quoteId: 'q1',
+            driverPubkey: motorista.public,
+          ),
         ),
-      ),
-    );
-    await pump();
-    transport.conexoes['wss://nos.lol']!.emitir(
-      mensagemEvent(
-        eventoAssinado(
-          autor: motorista,
-          kind: 20009,
-          content: 'cifrado-pelo-nip44',
-          tags: [
-            prototypeMarkerTag,
-            ['p', passageiro.public],
-            ['e', 'q1'],
-          ],
+      );
+      await pump();
+      transport.conexoes['wss://nos.lol']!.emitir(
+        mensagemEvent(
+          eventoAssinado(
+            autor: motorista,
+            kind: 20009,
+            content: 'cifrado-pelo-nip44',
+            tags: [
+              prototypeMarkerTag,
+              ['p', passageiro.public],
+              ['e', 'q1'],
+            ],
+          ),
         ),
-      ),
-    );
-    await pump();
+      );
+      await pump();
 
-    expect(canal.traffic, isNotEmpty);
-    final tudo = canal.traffic.toString();
-    expect(tudo.contains(passageiro.private), isFalse);
-    expect(tudo.contains(motorista.private), isFalse);
-    // O que foi gravado em disco tampouco.
-    expect(store.values.values.join().contains(passageiro.private), isFalse);
+      expect(canal.traffic, isNotEmpty);
+      final tudo = canal.traffic.toString();
+      expect(tudo.contains(passageiro.private), isFalse);
+      expect(tudo.contains(motorista.private), isFalse);
+      // O que foi gravado em disco tampouco.
+      expect(store.values.values.join().contains(passageiro.private), isFalse);
 
-    await hub.dispose();
-    await core.dispose();
-  });
+      await hub.dispose();
+      await core.dispose();
+    },
+  );
 
   test('a chave de teste existe (o teste acima não é vácuo)', () {
     final par = novoPar();
     expect(par.private, hasLength(64));
-    expect(nostr.Nostr.instance.services.keys.isValidPrivateKey(par.private), isTrue);
+    expect(
+      nostr.Nostr.instance.services.keys.isValidPrivateKey(par.private),
+      isTrue,
+    );
   });
 }

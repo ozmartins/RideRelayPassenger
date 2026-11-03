@@ -248,7 +248,9 @@ void main() {
         ? null
         : [
             for (final t in tags)
-              if (t.length >= 2 && t[0] == 'p' && t[1] == 'pubkey-do-passageiro')
+              if (t.length >= 2 &&
+                  t[0] == 'p' &&
+                  t[1] == 'pubkey-do-passageiro')
                 ['p', identidade.publicKey]
               else
                 t,
@@ -291,8 +293,7 @@ void main() {
           receivedQuoteStore: receivedQuoteStore ?? FakeReceivedQuoteStore(),
           acceptedRideStore: acceptedRideStore ?? InMemoryAcceptedRideStore(),
           destinationStore: destinationStore ?? InMemoryDestinationStore(),
-          rideStateStore:
-              rideStateStore ?? InMemoryPassengerRideStateStore(),
+          rideStateStore: rideStateStore ?? InMemoryPassengerRideStateStore(),
           rideRatingStore: rideRatingStore ?? FakeRideRatingStore(),
           receiptStore: receiptStore,
           receiptService: receiptService,
@@ -556,10 +557,7 @@ void main() {
     await esperarEntregaDoEvento(tester);
 
     await tester.tap(
-      find.widgetWithText(
-        FilledButton,
-        'Confirmo que encontrei o motorista',
-      ),
+      find.widgetWithText(FilledButton, 'Confirmo que encontrei o motorista'),
     );
     await tester.pumpAndSettle();
 
@@ -1536,217 +1534,204 @@ void main() {
       },
     );
 
-    testWidgets(
-      'depois de aceito, um orçamento novo da mesma solicitação é '
-      'persistido mas não reabre a modal nem gera recusa automática',
-      (tester) async {
-        final store = FakeReceivedQuoteStore();
-        final requestId = await montarComSolicitacaoAtiva(
-          tester,
-          receivedQuoteStore: store,
-        );
+    testWidgets('depois de aceito, um orçamento novo da mesma solicitação é '
+        'persistido mas não reabre a modal nem gera recusa automática', (
+      tester,
+    ) async {
+      final store = FakeReceivedQuoteStore();
+      final requestId = await montarComSolicitacaoAtiva(
+        tester,
+        receivedQuoteStore: store,
+      );
 
-        transport.conexoes['wss://a.test']!.emitir(
-          mensagemEvent(orcamentoDeTeste(requestId: requestId)),
-        );
-        await esperarEntregaDoEvento(tester);
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(orcamentoDeTeste(requestId: requestId)),
+      );
+      await esperarEntregaDoEvento(tester);
 
-        await tester.tap(find.widgetWithText(FilledButton, 'Aceitar').first);
-        await tester.pumpAndSettle();
-        expect(find.text('Orçamentos recebidos'), findsNothing);
+      await tester.tap(find.widgetWithText(FilledButton, 'Aceitar').first);
+      await tester.pumpAndSettle();
+      expect(find.text('Orçamentos recebidos'), findsNothing);
 
-        final antesDoNovo = transport.conexoes['wss://a.test']!.enviadas
-            .length;
-        transport.conexoes['wss://a.test']!.emitir(
-          mensagemEvent(orcamentoDeTeste(requestId: requestId, total: 99.0)),
-        );
-        await esperarEntregaDoEvento(tester);
+      final antesDoNovo = transport.conexoes['wss://a.test']!.enviadas.length;
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(orcamentoDeTeste(requestId: requestId, total: 99.0)),
+      );
+      await esperarEntregaDoEvento(tester);
 
-        expect(
-          find.text('Orçamentos recebidos'),
-          findsNothing,
-          reason: 'não reabre a modal depois da decisão',
-        );
-        expect(store.salvos, hasLength(2), reason: 'ainda é persistido');
-        expect(
-          transport.conexoes['wss://a.test']!.enviadas.length,
-          antesDoNovo,
-          reason: 'nenhuma recusa automática nova é publicada',
-        );
-      },
-    );
+      expect(
+        find.text('Orçamentos recebidos'),
+        findsNothing,
+        reason: 'não reabre a modal depois da decisão',
+      );
+      expect(store.salvos, hasLength(2), reason: 'ainda é persistido');
+      expect(
+        transport.conexoes['wss://a.test']!.enviadas.length,
+        antesDoNovo,
+        reason: 'nenhuma recusa automática nova é publicada',
+      );
+    });
   });
 
-  group(
-    'MapScreen — notificar que o motorista está a caminho (US1 da feature '
-    '009)',
-    () {
-      testWidgets(
-        'aceitar um orçamento grava AcceptedRide (quoteId, driverPubkey) e '
-        'transiciona o estado para orcamentoAceito (FR-006 da feature 009; '
-        'FR-004 da feature 014)',
-        (tester) async {
-          final acceptedRideStore = InMemoryAcceptedRideStore();
-          final rideStateStore = InMemoryPassengerRideStateStore();
-          final resultado = await montarComCorridaAceita(
-            tester,
-            acceptedRideStore: acceptedRideStore,
-            rideStateStore: rideStateStore,
-          );
+  group('MapScreen — notificar que o motorista está a caminho (US1 da feature '
+      '009)', () {
+    testWidgets(
+      'aceitar um orçamento grava AcceptedRide (quoteId, driverPubkey) e '
+      'transiciona o estado para orcamentoAceito (FR-006 da feature 009; '
+      'FR-004 da feature 014)',
+      (tester) async {
+        final acceptedRideStore = InMemoryAcceptedRideStore();
+        final rideStateStore = InMemoryPassengerRideStateStore();
+        final resultado = await montarComCorridaAceita(
+          tester,
+          acceptedRideStore: acceptedRideStore,
+          rideStateStore: rideStateStore,
+        );
 
-          final aceita = await acceptedRideStore.load();
-          expect(aceita, isNotNull);
-          expect(aceita!.quoteId, resultado.quoteId);
-          expect(aceita.driverPubkey, resultado.autor.public);
-          expect(rideStateStore.status, PassengerRideStatus.orcamentoAceito);
-        },
+        final aceita = await acceptedRideStore.load();
+        expect(aceita, isNotNull);
+        expect(aceita!.quoteId, resultado.quoteId);
+        expect(aceita.driverPubkey, resultado.autor.public);
+        expect(rideStateStore.status, PassengerRideStatus.orcamentoAceito);
+      },
+    );
+
+    testWidgets('localização do motorista aceito exibe a modal "Motorista a '
+        'caminho" (FR-001, FR-002)', (tester) async {
+      final resultado = await montarComCorridaAceita(tester);
+
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(
+          localizacaoDeTeste(
+            autor: resultado.autor,
+            quoteId: resultado.quoteId,
+          ),
+        ),
       );
+      await esperarEntregaDoEvento(tester);
 
-      testWidgets(
-        'localização do motorista aceito exibe a modal "Motorista a '
-        'caminho" (FR-001, FR-002)',
-        (tester) async {
-          final resultado = await montarComCorridaAceita(tester);
+      expect(find.text('Motorista a caminho'), findsOneWidget);
+      expect(find.text('OK'), findsOneWidget);
+    });
 
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              localizacaoDeTeste(
-                autor: resultado.autor,
-                quoteId: resultado.quoteId,
-              ),
-            ),
-          );
-          await esperarEntregaDoEvento(tester);
-
-          expect(find.text('Motorista a caminho'), findsOneWidget);
-          expect(find.text('OK'), findsOneWidget);
-        },
+    testWidgets('tocar "OK" fecha a modal (FR-003)', (tester) async {
+      final resultado = await montarComCorridaAceita(tester);
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(
+          localizacaoDeTeste(
+            autor: resultado.autor,
+            quoteId: resultado.quoteId,
+          ),
+        ),
       );
+      await esperarEntregaDoEvento(tester);
+      expect(find.text('Motorista a caminho'), findsOneWidget);
 
-      testWidgets('tocar "OK" fecha a modal (FR-003)', (tester) async {
-        final resultado = await montarComCorridaAceita(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Motorista a caminho'), findsNothing);
+    });
+
+    testWidgets('uma segunda localização do mesmo motorista não reabre a modal '
+        '(FR-004)', (tester) async {
+      final resultado = await montarComCorridaAceita(tester);
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(
+          localizacaoDeTeste(
+            autor: resultado.autor,
+            quoteId: resultado.quoteId,
+          ),
+        ),
+      );
+      await esperarEntregaDoEvento(tester);
+      await tester.tap(find.widgetWithText(FilledButton, 'OK'));
+      await tester.pumpAndSettle();
+
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(
+          localizacaoDeTeste(
+            autor: resultado.autor,
+            quoteId: resultado.quoteId,
+          ),
+        ),
+      );
+      await esperarEntregaDoEvento(tester);
+
+      expect(find.text('Motorista a caminho'), findsNothing);
+    });
+
+    testWidgets(
+      'localização de um motorista diferente do aceito (quoteId de um '
+      'orçamento que não foi o escolhido) não exibe modal (FR-005, '
+      'SC-003)',
+      (tester) async {
+        await montarComCorridaAceita(tester);
+
+        // Mesmo edge case do spec.md: um motorista que já tinha enviado
+        // orçamento antes da decisão — quoteId próprio, diferente do
+        // aceito, por ser um evento kind 20002 distinto.
         transport.conexoes['wss://a.test']!.emitir(
           mensagemEvent(
             localizacaoDeTeste(
-              autor: resultado.autor,
-              quoteId: resultado.quoteId,
+              autor: novoPar(),
+              quoteId: 'quote-nao-escolhido',
             ),
           ),
         );
         await esperarEntregaDoEvento(tester);
-        expect(find.text('Motorista a caminho'), findsOneWidget);
-
-        await tester.tap(find.widgetWithText(FilledButton, 'OK'));
-        await tester.pumpAndSettle();
 
         expect(find.text('Motorista a caminho'), findsNothing);
-      });
+      },
+    );
 
-      testWidgets(
-        'uma segunda localização do mesmo motorista não reabre a modal '
-        '(FR-004)',
-        (tester) async {
-          final resultado = await montarComCorridaAceita(tester);
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              localizacaoDeTeste(
-                autor: resultado.autor,
-                quoteId: resultado.quoteId,
-              ),
-            ),
-          );
-          await esperarEntregaDoEvento(tester);
-          await tester.tap(find.widgetWithText(FilledButton, 'OK'));
-          await tester.pumpAndSettle();
+    testWidgets(
+      'localização recebida sem nenhuma corrida aceita não exibe modal '
+      '(FR-005)',
+      (tester) async {
+        await relayService.start([const Relay(url: 'wss://a.test')]);
+        await montar(tester);
 
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              localizacaoDeTeste(
-                autor: resultado.autor,
-                quoteId: resultado.quoteId,
-              ),
-            ),
-          );
-          await esperarEntregaDoEvento(tester);
+        transport.conexoes['wss://a.test']!.emitir(
+          mensagemEvent(
+            localizacaoDeTeste(autor: novoPar(), quoteId: 'quote-qualquer'),
+          ),
+        );
+        await esperarEntregaDoEvento(tester);
 
-          expect(find.text('Motorista a caminho'), findsNothing);
-        },
-      );
+        expect(find.text('Motorista a caminho'), findsNothing);
+      },
+    );
 
-      testWidgets(
-        'localização de um motorista diferente do aceito (quoteId de um '
-        'orçamento que não foi o escolhido) não exibe modal (FR-005, '
-        'SC-003)',
-        (tester) async {
-          await montarComCorridaAceita(tester);
+    testWidgets(
+      'com o estado pré-carregado em motoristaACaminho (reinício após já '
+      'ter avisado), uma nova localização não reabre a modal (FR-007 da '
+      'feature 009; FR-010 da feature 014)',
+      (tester) async {
+        final autor = novoPar();
+        const quoteId = 'quote-de-antes-do-reinicio';
+        final acceptedRideStore = InMemoryAcceptedRideStore(
+          initial: AcceptedRide(quoteId: quoteId, driverPubkey: autor.public),
+        );
+        final rideStateStore = InMemoryPassengerRideStateStore(
+          status: PassengerRideStatus.motoristaACaminho,
+        );
+        await relayService.start([const Relay(url: 'wss://a.test')]);
+        await montar(
+          tester,
+          acceptedRideStore: acceptedRideStore,
+          rideStateStore: rideStateStore,
+        );
 
-          // Mesmo edge case do spec.md: um motorista que já tinha enviado
-          // orçamento antes da decisão — quoteId próprio, diferente do
-          // aceito, por ser um evento kind 20002 distinto.
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              localizacaoDeTeste(
-                autor: novoPar(),
-                quoteId: 'quote-nao-escolhido',
-              ),
-            ),
-          );
-          await esperarEntregaDoEvento(tester);
+        transport.conexoes['wss://a.test']!.emitir(
+          mensagemEvent(localizacaoDeTeste(autor: autor, quoteId: quoteId)),
+        );
+        await esperarEntregaDoEvento(tester);
 
-          expect(find.text('Motorista a caminho'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'localização recebida sem nenhuma corrida aceita não exibe modal '
-        '(FR-005)',
-        (tester) async {
-          await relayService.start([const Relay(url: 'wss://a.test')]);
-          await montar(tester);
-
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              localizacaoDeTeste(autor: novoPar(), quoteId: 'quote-qualquer'),
-            ),
-          );
-          await esperarEntregaDoEvento(tester);
-
-          expect(find.text('Motorista a caminho'), findsNothing);
-        },
-      );
-
-      testWidgets(
-        'com o estado pré-carregado em motoristaACaminho (reinício após já '
-        'ter avisado), uma nova localização não reabre a modal (FR-007 da '
-        'feature 009; FR-010 da feature 014)',
-        (tester) async {
-          final autor = novoPar();
-          const quoteId = 'quote-de-antes-do-reinicio';
-          final acceptedRideStore = InMemoryAcceptedRideStore(
-            initial: AcceptedRide(quoteId: quoteId, driverPubkey: autor.public),
-          );
-          final rideStateStore = InMemoryPassengerRideStateStore(
-            status: PassengerRideStatus.motoristaACaminho,
-          );
-          await relayService.start([const Relay(url: 'wss://a.test')]);
-          await montar(
-            tester,
-            acceptedRideStore: acceptedRideStore,
-            rideStateStore: rideStateStore,
-          );
-
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              localizacaoDeTeste(autor: autor, quoteId: quoteId),
-            ),
-          );
-          await esperarEntregaDoEvento(tester);
-
-          expect(find.text('Motorista a caminho'), findsNothing);
-        },
-      );
-    },
-  );
+        expect(find.text('Motorista a caminho'), findsNothing);
+      },
+    );
+  });
 
   group(
     'MapScreen — confirmar encontro com o motorista (US1 da feature 010)',
@@ -1906,8 +1891,10 @@ void main() {
               .map((m) => jsonDecode(m) as List)
               .where((d) => d.first == 'EVENT')
               .map((d) => d[1] as Map<String, dynamic>);
-          expect(enviados.where((p) => p['kind'] == meetingConfirmedKind),
-              isEmpty);
+          expect(
+            enviados.where((p) => p['kind'] == meetingConfirmedKind),
+            isEmpty,
+          );
           expect(find.text('Motorista chegou'), findsOneWidget);
           expect(tester.takeException(), isNull);
         },
@@ -1950,25 +1937,22 @@ void main() {
         },
       );
 
-      testWidgets(
-        'chegada de um motorista diferente do aceito não exibe modal '
-        '(FR-009)',
-        (tester) async {
-          await montarComCorridaAceita(tester);
+      testWidgets('chegada de um motorista diferente do aceito não exibe modal '
+          '(FR-009)', (tester) async {
+        await montarComCorridaAceita(tester);
 
-          transport.conexoes['wss://a.test']!.emitir(
-            mensagemEvent(
-              chegadaMotoristaDeTeste(
-                autor: novoPar(),
-                quoteId: 'quote-nao-escolhido',
-              ),
+        transport.conexoes['wss://a.test']!.emitir(
+          mensagemEvent(
+            chegadaMotoristaDeTeste(
+              autor: novoPar(),
+              quoteId: 'quote-nao-escolhido',
             ),
-          );
-          await esperarEntregaDoEvento(tester);
+          ),
+        );
+        await esperarEntregaDoEvento(tester);
 
-          expect(find.text('Motorista chegou'), findsNothing);
-        },
-      );
+        expect(find.text('Motorista chegou'), findsNothing);
+      });
 
       testWidgets(
         'sem relay conectado ao tocar o botão, a modal permanece aberta com '
@@ -1998,10 +1982,7 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text('Motorista chegou'), findsOneWidget);
-          expect(
-            find.textContaining('Nenhum relay conectado'),
-            findsOneWidget,
-          );
+          expect(find.textContaining('Nenhum relay conectado'), findsOneWidget);
         },
       );
     },
@@ -2263,18 +2244,17 @@ void main() {
     }
 
     /// Reputação consistente do motorista: [n] recibos de um avaliador qualquer.
-    Map<String, dynamic> Function(Identity) historicoDe(int n) =>
-        (motorista) {
-          final cadeia = cadeiaDeRecibos(
-            avaliador: identidadeNova(),
-            dono: motorista,
-            tamanho: n,
-          );
-          return reputacaoDe(
-            cadeia.reversed.take(5).toList(),
-            seqProximo: n,
-          ).toJson();
-        };
+    Map<String, dynamic> Function(Identity) historicoDe(int n) => (motorista) {
+      final cadeia = cadeiaDeRecibos(
+        avaliador: identidadeNova(),
+        dono: motorista,
+        tamanho: n,
+      );
+      return reputacaoDe(
+        cadeia.reversed.take(5).toList(),
+        seqProximo: n,
+      ).toJson();
+    };
 
     testWidgets('solicitar sem recibos publica o 20001 sem a chave reputacao', (
       tester,
@@ -2302,7 +2282,10 @@ void main() {
       expect(reputacao['corridas'], 1);
       expect(reputacao['seq_proximo'], 1);
       expect(reputacao['head'], recibo.idRecibo);
-      expect((reputacao['recibos'] as List).single['id_recibo'], recibo.idRecibo);
+      expect(
+        (reputacao['recibos'] as List).single['id_recibo'],
+        recibo.idRecibo,
+      );
     });
 
     testWidgets('aceitar um orçamento com reputação guarda a declarada', (
@@ -2487,60 +2470,45 @@ void main() {
     // `test/domain/passenger_ride_status_test.dart`; a garantia de
     // visibilidade do painel é testada no grupo "feature 015" abaixo.
 
-    testWidgets(
-      'a primeira localização do motorista transiciona o estado para '
-      'motoristaACaminho (FR-005)',
-      (tester) async {
-        final rideStateStore = InMemoryPassengerRideStateStore();
-        final resultado = await montarComCorridaAceita(
-          tester,
-          rideStateStore: rideStateStore,
-        );
+    testWidgets('a primeira localização do motorista transiciona o estado para '
+        'motoristaACaminho (FR-005)', (tester) async {
+      final rideStateStore = InMemoryPassengerRideStateStore();
+      final resultado = await montarComCorridaAceita(
+        tester,
+        rideStateStore: rideStateStore,
+      );
 
-        transport.conexoes['wss://a.test']!.emitir(
-          mensagemEvent(
-            localizacaoDeTeste(
-              autor: resultado.autor,
-              quoteId: resultado.quoteId,
-            ),
+      transport.conexoes['wss://a.test']!.emitir(
+        mensagemEvent(
+          localizacaoDeTeste(
+            autor: resultado.autor,
+            quoteId: resultado.quoteId,
           ),
-        );
-        await esperarEntregaDoEvento(tester);
+        ),
+      );
+      await esperarEntregaDoEvento(tester);
 
-        expect(rideStateStore.status, PassengerRideStatus.motoristaACaminho);
-      },
-    );
+      expect(rideStateStore.status, PassengerRideStatus.motoristaACaminho);
+    });
 
-    testWidgets(
-      'confirmar o encontro transiciona o estado para emCorrida '
-      '(FR-006)',
-      (tester) async {
-        final rideStateStore = InMemoryPassengerRideStateStore();
-        await montarComEncontroConfirmado(
-          tester,
-          rideStateStore: rideStateStore,
-        );
+    testWidgets('confirmar o encontro transiciona o estado para emCorrida '
+        '(FR-006)', (tester) async {
+      final rideStateStore = InMemoryPassengerRideStateStore();
+      await montarComEncontroConfirmado(tester, rideStateStore: rideStateStore);
 
-        expect(rideStateStore.status, PassengerRideStatus.emCorrida);
-      },
-    );
+      expect(rideStateStore.status, PassengerRideStatus.emCorrida);
+    });
 
-    testWidgets(
-      'confirmar o destino transiciona o estado para '
-      'destinoConfirmadoAguardandoAvaliacao (FR-007)',
-      (tester) async {
-        final rideStateStore = InMemoryPassengerRideStateStore();
-        await montarComDestinoConfirmado(
-          tester,
-          rideStateStore: rideStateStore,
-        );
+    testWidgets('confirmar o destino transiciona o estado para '
+        'destinoConfirmadoAguardandoAvaliacao (FR-007)', (tester) async {
+      final rideStateStore = InMemoryPassengerRideStateStore();
+      await montarComDestinoConfirmado(tester, rideStateStore: rideStateStore);
 
-        expect(
-          rideStateStore.status,
-          PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
-        );
-      },
-    );
+      expect(
+        rideStateStore.status,
+        PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
+      );
+    });
 
     testWidgets(
       'um orçamento (kind: 20002) recebido depois que a solicitação já foi '
@@ -2568,29 +2536,29 @@ void main() {
       },
     );
 
-    testWidgets(
-      'confirmar a avaliação a partir de '
-      'destinoConfirmadoAguardandoAvaliacao volta o estado a inicial '
-      '(FR-008, US3 cenário 1)',
-      (tester) async {
-        final rideStateStore = InMemoryPassengerRideStateStore();
-        await montarComDestinoConfirmado(tester, rideStateStore: rideStateStore);
+    testWidgets('confirmar a avaliação a partir de '
+        'destinoConfirmadoAguardandoAvaliacao volta o estado a inicial '
+        '(FR-008, US3 cenário 1)', (tester) async {
+      final rideStateStore = InMemoryPassengerRideStateStore();
+      await montarComDestinoConfirmado(tester, rideStateStore: rideStateStore);
 
-        await tester.tap(find.byIcon(Icons.star_border).at(2));
-        await tester.pump();
-        await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
-        await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.star_border).at(2));
+      await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Confirmar'));
+      await tester.pumpAndSettle();
 
-        expect(rideStateStore.status, PassengerRideStatus.inicial);
-      },
-    );
+      expect(rideStateStore.status, PassengerRideStatus.inicial);
+    });
 
     testWidgets(
       'pular a avaliação a partir de destinoConfirmadoAguardandoAvaliacao '
       'volta o estado a inicial (FR-008, US3 cenário 2)',
       (tester) async {
         final rideStateStore = InMemoryPassengerRideStateStore();
-        await montarComDestinoConfirmado(tester, rideStateStore: rideStateStore);
+        await montarComDestinoConfirmado(
+          tester,
+          rideStateStore: rideStateStore,
+        );
 
         await tester.tap(find.widgetWithText(TextButton, 'Pular'));
         await tester.pumpAndSettle();
@@ -2604,7 +2572,10 @@ void main() {
       'normalmente, sem resquício da corrida anterior (SC-003)',
       (tester) async {
         final rideStateStore = InMemoryPassengerRideStateStore();
-        await montarComDestinoConfirmado(tester, rideStateStore: rideStateStore);
+        await montarComDestinoConfirmado(
+          tester,
+          rideStateStore: rideStateStore,
+        );
         await tester.tap(find.widgetWithText(TextButton, 'Pular'));
         await tester.pumpAndSettle();
         // Dissipa a SnackBar da solicitação original ("Solicitação de
@@ -2627,10 +2598,7 @@ void main() {
           find.textContaining('Solicitação de corrida enviada'),
           findsOneWidget,
         );
-        expect(
-          rideStateStore.status,
-          PassengerRideStatus.aguardandoOrcamentos,
-        );
+        expect(rideStateStore.status, PassengerRideStatus.aguardandoOrcamentos);
       },
     );
   });
@@ -2638,15 +2606,12 @@ void main() {
   group(
     'MapScreen — tela de orçamentos recebidos e cancelamento (feature 015)',
     () {
-      testWidgets(
-        'painel de solicitação some assim que a corrida sai da fase '
-        'inicial (US1, FR-001, FR-002)',
-        (tester) async {
-          await montarComSolicitacaoAtiva(tester);
+      testWidgets('painel de solicitação some assim que a corrida sai da fase '
+          'inicial (US1, FR-001, FR-002)', (tester) async {
+        await montarComSolicitacaoAtiva(tester);
 
-          expect(find.text('Solicitar corrida'), findsNothing);
-        },
-      );
+        expect(find.text('Solicitar corrida'), findsNothing);
+      });
 
       testWidgets(
         'painel de solicitação continua ausente em orcamentoAceito (US1, '
@@ -2658,17 +2623,14 @@ void main() {
         },
       );
 
-      testWidgets(
-        'solicitar corrida exibe a tela de orçamentos vazia, com '
-        '"Cancelar" visível (US2, FR-003)',
-        (tester) async {
-          await montarComSolicitacaoAtiva(tester);
+      testWidgets('solicitar corrida exibe a tela de orçamentos vazia, com '
+          '"Cancelar" visível (US2, FR-003)', (tester) async {
+        await montarComSolicitacaoAtiva(tester);
 
-          expect(find.text('Orçamentos recebidos'), findsOneWidget);
-          expect(find.textContaining('Aguardando orçamentos'), findsOneWidget);
-          expect(find.widgetWithText(FilledButton, 'Cancelar'), findsOneWidget);
-        },
-      );
+        expect(find.text('Orçamentos recebidos'), findsOneWidget);
+        expect(find.textContaining('Aguardando orçamentos'), findsOneWidget);
+        expect(find.widgetWithText(FilledButton, 'Cancelar'), findsOneWidget);
+      });
 
       testWidgets(
         'reiniciar o app com aguardandoOrcamentos persistido restaura os '
@@ -3110,7 +3072,10 @@ void main() {
 
           var ultimo = motorista;
           for (var i = 1; i <= 9; i++) {
-            ultimo = LatLng(motorista.latitude + i * 0.0005, motorista.longitude);
+            ultimo = LatLng(
+              motorista.latitude + i * 0.0005,
+              motorista.longitude,
+            );
             await posicao(tester, r, ultimo, i * 5);
             expect(centro(tester), ultimo);
           }
@@ -3142,33 +3107,27 @@ void main() {
         },
       );
 
-      testWidgets(
-        'reaberto já em "motorista a caminho", a primeira posição do '
-        'motorista centraliza o mapa nele',
-        (tester) async {
-          final autor = novoPar();
-          const quoteId = 'quote-de-antes-do-reinicio';
-          await relayService.start([const Relay(url: 'wss://a.test')]);
-          await montar(
-            tester,
-            acceptedRideStore: InMemoryAcceptedRideStore(
-              initial: AcceptedRide(
-                quoteId: quoteId,
-                driverPubkey: autor.public,
-              ),
-            ),
-            rideStateStore: InMemoryPassengerRideStateStore(
-              status: PassengerRideStatus.motoristaACaminho,
-            ),
-          );
+      testWidgets('reaberto já em "motorista a caminho", a primeira posição do '
+          'motorista centraliza o mapa nele', (tester) async {
+        final autor = novoPar();
+        const quoteId = 'quote-de-antes-do-reinicio';
+        await relayService.start([const Relay(url: 'wss://a.test')]);
+        await montar(
+          tester,
+          acceptedRideStore: InMemoryAcceptedRideStore(
+            initial: AcceptedRide(quoteId: quoteId, driverPubkey: autor.public),
+          ),
+          rideStateStore: InMemoryPassengerRideStateStore(
+            status: PassengerRideStatus.motoristaACaminho,
+          ),
+        );
 
-          await entregar(
-            tester,
-            localizacaoDeTeste(autor: autor, quoteId: quoteId, createdAt: t0),
-          );
-          expect(centro(tester), motorista);
-        },
-      );
+        await entregar(
+          tester,
+          localizacaoDeTeste(autor: autor, quoteId: quoteId, createdAt: t0),
+        );
+        expect(centro(tester), motorista);
+      });
 
       testWidgets(
         'o botão "Centralizar" não existe em "motorista a caminho", nem '
@@ -3623,23 +3582,17 @@ void main() {
         },
       );
 
-      testWidgets(
-        'fora de emCorrida a rota é ignorada e não reaparece depois '
-        '(FR-002, FR-005)',
-        (tester) async {
-          final r = await montarComCorridaAceita(tester);
-          await avisarMotoristaACaminho(tester, r);
+      testWidgets('fora de emCorrida a rota é ignorada e não reaparece depois '
+          '(FR-002, FR-005)', (tester) async {
+        final r = await montarComCorridaAceita(tester);
+        await avisarMotoristaACaminho(tester, r);
 
-          await entregar(
-            tester,
-            rotaDeTeste(autor: r.autor, quoteId: r.quoteId),
-          );
-          expect(temLinha(tester, rotaRecebida), isFalse);
+        await entregar(tester, rotaDeTeste(autor: r.autor, quoteId: r.quoteId));
+        expect(temLinha(tester, rotaRecebida), isFalse);
 
-          await confirmarEncontro(tester, r);
-          expect(temLinha(tester, rotaRecebida), isFalse);
-        },
-      );
+        await confirmarEncontro(tester, r);
+        expect(temLinha(tester, rotaRecebida), isFalse);
+      });
 
       testWidgets(
         'ao confirmar o destino o traçado some, e uma rota tardia não o faz '
@@ -4249,9 +4202,7 @@ void main() {
         return b.monta(pTag: outro, cifrarPara: outro);
       },
       'MAC adulterado': (b) {
-        final bytes = base64.decode(
-          b.cifradoValido(),
-        )..[60] ^= 0x01;
+        final bytes = base64.decode(b.cifradoValido())..[60] ^= 0x01;
         return b.monta(emClaro: true, conteudoBruto: base64.encode(bytes));
       },
       if (semDadoProprio)
@@ -4327,12 +4278,11 @@ void main() {
         expect(tester.takeException(), isNull);
       });
 
-      testWidgets('20005 $nome: não dispara "a caminho" (FR-006, FR-007)', (tester) async {
+      testWidgets('20005 $nome: não dispara "a caminho" (FR-006, FR-007)', (
+        tester,
+      ) async {
         final estado = InMemoryPassengerRideStateStore();
-        final r = await montarComCorridaAceita(
-          tester,
-          rideStateStore: estado,
-        );
+        final r = await montarComCorridaAceita(tester, rideStateStore: estado);
 
         final b = base(
           r.autor,
@@ -4770,8 +4720,10 @@ void main() {
       );
       await tester.pump();
 
-      expect(controlador.estados.first.rideStatus,
-          PassengerRideStatus.motoristaACaminho);
+      expect(
+        controlador.estados.first.rideStatus,
+        PassengerRideStatus.motoristaACaminho,
+      );
       expect(controlador.estados.first.quoteId, 'q1');
       expect(controlador.estados.first.driverPubkey, 'd1');
       expect(controlador.estados.first.hasActiveRide, isTrue);
@@ -4806,8 +4758,9 @@ void main() {
       final enviada = transport.conexoes['wss://a.test']!.enviadas.firstWhere(
         (m) => m.startsWith('["EVENT"'),
       );
-      final id = ((jsonDecode(enviada) as List)[1]
-          as Map<String, dynamic>)['id'] as String;
+      final id =
+          ((jsonDecode(enviada) as List)[1] as Map<String, dynamic>)['id']
+              as String;
       final ativo = controlador.estados.lastWhere(
         (e) => e.rideStatus == PassengerRideStatus.aguardandoOrcamentos,
       );
@@ -4864,8 +4817,9 @@ void main() {
       expect(controlador.visibilidade, [true, false, false, false, true, true]);
     });
 
-    testWidgets('sem controlador (testes e demais usos) nada muda',
-        (tester) async {
+    testWidgets('sem controlador (testes e demais usos) nada muda', (
+      tester,
+    ) async {
       await montar(tester);
       for (final estado in [
         AppLifecycleState.inactive,

@@ -8,21 +8,19 @@ import 'package:passenger/screens/received_quotes_screen.dart';
 
 import '../support/receipt_builders.dart';
 
-ReceivedQuote _quote({
-  String quoteId = 'q1',
-  int? etaMinutes = 6,
-}) => ReceivedQuote(
-  quoteId: quoteId,
-  requestId: 'r1',
-  driverPubkey: 'a' * 64,
-  driverName: 'Fulano da Silva',
-  carBrand: 'Fiat',
-  carModel: 'Palio',
-  carYear: 2018,
-  pricePerKm: 2.5,
-  total: 25.0,
-  etaMinutes: etaMinutes,
-);
+ReceivedQuote _quote({String quoteId = 'q1', int? etaMinutes = 6}) =>
+    ReceivedQuote(
+      quoteId: quoteId,
+      requestId: 'r1',
+      driverPubkey: 'a' * 64,
+      driverName: 'Fulano da Silva',
+      carBrand: 'Fiat',
+      carModel: 'Palio',
+      carYear: 2018,
+      pricePerKm: 2.5,
+      total: 25.0,
+      etaMinutes: etaMinutes,
+    );
 
 Future<void> _montar(
   WidgetTester tester, {
@@ -149,25 +147,26 @@ void main() {
     },
   );
 
-  testWidgets('tocar "Aceitar" chama onAccept com o orçamento do item (FR-006)', (
-    tester,
-  ) async {
-    final notifier = ValueNotifier<List<ReceivedQuote>>([_quote()]);
-    ReceivedQuote? recebido;
-    await _montar(
-      tester,
-      quotes: notifier,
-      onAccept: (quote) async {
-        recebido = quote;
-        return null;
-      },
-    );
+  testWidgets(
+    'tocar "Aceitar" chama onAccept com o orçamento do item (FR-006)',
+    (tester) async {
+      final notifier = ValueNotifier<List<ReceivedQuote>>([_quote()]);
+      ReceivedQuote? recebido;
+      await _montar(
+        tester,
+        quotes: notifier,
+        onAccept: (quote) async {
+          recebido = quote;
+          return null;
+        },
+      );
 
-    await tester.tap(find.widgetWithText(FilledButton, 'Aceitar'));
-    await tester.pump();
+      await tester.tap(find.widgetWithText(FilledButton, 'Aceitar'));
+      await tester.pump();
 
-    expect(recebido?.quoteId, 'q1');
-  });
+      expect(recebido?.quoteId, 'q1');
+    },
+  );
 
   testWidgets('erro de onAccept é exibido no item, sem fechar nada', (
     tester,
@@ -188,11 +187,7 @@ void main() {
   testWidgets('tocar "Cancelar" chama onCancel (FR-009)', (tester) async {
     final notifier = ValueNotifier<List<ReceivedQuote>>(const []);
     var cancelado = false;
-    await _montar(
-      tester,
-      quotes: notifier,
-      onCancel: () => cancelado = true,
-    );
+    await _montar(tester, quotes: notifier, onCancel: () => cancelado = true);
 
     await tester.tap(find.widgetWithText(FilledButton, 'Cancelar'));
     await tester.pump();
@@ -222,10 +217,7 @@ void main() {
     );
 
     Future<void> mostrar(WidgetTester tester, Reputation? reputacao) =>
-        _montar(
-          tester,
-          quotes: ValueNotifier([comReputacao(reputacao)]),
-        );
+        _montar(tester, quotes: ValueNotifier([comReputacao(reputacao)]));
 
     testWidgets('sem reputação: motorista sem histórico', (tester) async {
       await mostrar(tester, null);
@@ -250,7 +242,11 @@ void main() {
     });
 
     testWidgets('declarado alto não altera o verificado', (tester) async {
-      final base = reputacaoDe([cadeia[2], cadeia[1], cadeia[0]], seqProximo: 3);
+      final base = reputacaoDe([
+        cadeia[2],
+        cadeia[1],
+        cadeia[0],
+      ], seqProximo: 3);
       await mostrar(
         tester,
         Reputation(
@@ -295,10 +291,11 @@ void main() {
     testWidgets('recibo adulterado é descartado e contado', (tester) async {
       await mostrar(
         tester,
-        reputacaoDe(
-          [cadeia[2], comNotaTrocada(cadeia[1]), cadeia[0]],
-          seqProximo: 3,
-        ),
+        reputacaoDe([
+          cadeia[2],
+          comNotaTrocada(cadeia[1]),
+          cadeia[0],
+        ], seqProximo: 3),
       );
 
       expect(find.text('Verificado nos últimos 2: ★ 2.0'), findsOneWidget);
@@ -314,7 +311,10 @@ void main() {
         dono: outroDono,
         tamanho: 2,
       );
-      await mostrar(tester, reputacaoDe(alheios.reversed.toList(), seqProximo: 2));
+      await mostrar(
+        tester,
+        reputacaoDe(alheios.reversed.toList(), seqProximo: 2),
+      );
 
       expect(find.text('Nenhum recibo verificado'), findsOneWidget);
       expect(find.text('2 recibos inválidos descartados'), findsOneWidget);

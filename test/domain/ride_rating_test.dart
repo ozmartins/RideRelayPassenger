@@ -17,14 +17,22 @@ void main() {
 
     test('recusa nota menor que 1', () {
       expect(
-        () => RideRating(rideId: 'quote-1', stars: 0, ratedAt: DateTime(2026, 9, 22)),
+        () => RideRating(
+          rideId: 'quote-1',
+          stars: 0,
+          ratedAt: DateTime(2026, 9, 22),
+        ),
         throwsArgumentError,
       );
     });
 
     test('recusa nota maior que 5', () {
       expect(
-        () => RideRating(rideId: 'quote-1', stars: 6, ratedAt: DateTime(2026, 9, 22)),
+        () => RideRating(
+          rideId: 'quote-1',
+          stars: 6,
+          ratedAt: DateTime(2026, 9, 22),
+        ),
         throwsArgumentError,
       );
     });

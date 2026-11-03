@@ -19,10 +19,7 @@ class _ClienteHttpDeTeste extends http.BaseClient {
 }
 
 http.StreamedResponse _respostaTexto(String corpo, {int status = 200}) {
-  return http.StreamedResponse(
-    Stream.value(utf8.encode(corpo)),
-    status,
-  );
+  return http.StreamedResponse(Stream.value(utf8.encode(corpo)), status);
 }
 
 const _corpoComResultados = '''
@@ -144,16 +141,14 @@ void main() {
       final uri = capturada!.url;
       expect(uri.host, 'photon.komoot.io');
       expect(uri.scheme, 'https');
-      expect(
-        uri.queryParameters,
-        {'q': 'Araranguá', 'lang': 'default', 'limit': '5'},
-      );
+      expect(uri.queryParameters, {
+        'q': 'Araranguá',
+        'lang': 'default',
+        'limit': '5',
+      });
       // A Photon pública bloqueia o User-Agent padrão do package:http com
       // HTTP 403 (D4 de research.md) — verificado contra a rede real.
-      expect(
-        capturada!.headers['User-Agent'],
-        contains('CorridasPassageiro'),
-      );
+      expect(capturada!.headers['User-Agent'], contains('CorridasPassageiro'));
     });
 
     test('erro HTTP lança GeocodingFailure', () async {

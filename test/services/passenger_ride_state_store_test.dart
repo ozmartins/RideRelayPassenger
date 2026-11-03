@@ -34,32 +34,27 @@ void main() {
 
     final restaurado = await PreferencesPassengerRideStateStore(store).load();
 
-    expect(
-      restaurado,
-      (PassengerRideStatus.aguardandoOrcamentos, 'solicitacao-1'),
-    );
+    expect(restaurado, (
+      PassengerRideStatus.aguardandoOrcamentos,
+      'solicitacao-1',
+    ));
   });
 
-  test(
-    'persiste e restaura cada estado intermediário do ciclo, sem '
-    'solicitacaoId',
-    () async {
-      for (final status in [
-        PassengerRideStatus.orcamentoAceito,
-        PassengerRideStatus.motoristaACaminho,
-        PassengerRideStatus.emCorrida,
-        PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
-      ]) {
-        await repo.save(status, null);
+  test('persiste e restaura cada estado intermediário do ciclo, sem '
+      'solicitacaoId', () async {
+    for (final status in [
+      PassengerRideStatus.orcamentoAceito,
+      PassengerRideStatus.motoristaACaminho,
+      PassengerRideStatus.emCorrida,
+      PassengerRideStatus.destinoConfirmadoAguardandoAvaliacao,
+    ]) {
+      await repo.save(status, null);
 
-        final restaurado = await PreferencesPassengerRideStateStore(
-          store,
-        ).load();
+      final restaurado = await PreferencesPassengerRideStateStore(store).load();
 
-        expect(restaurado, (status, null));
-      }
-    },
-  );
+      expect(restaurado, (status, null));
+    }
+  });
 
   test('persiste e restaura o retorno a inicial', () async {
     await repo.save(PassengerRideStatus.aguardandoOrcamentos, 'solicitacao-1');
@@ -71,8 +66,7 @@ void main() {
   });
 
   test('estado corrompido volta ao default sem travar', () async {
-    store.values[PreferencesPassengerRideStateStore.storageKey] =
-        'não é json';
+    store.values[PreferencesPassengerRideStateStore.storageKey] = 'não é json';
 
     expect(await repo.load(), (PassengerRideStatus.inicial, null));
   });

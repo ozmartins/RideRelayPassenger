@@ -183,19 +183,21 @@ void main() {
       }
     });
 
-    test('20007 fora de motoristaACaminho: nada (guarda de confirmar encontro)',
-        () {
-      for (final s in [
-        PassengerRideStatus.orcamentoAceito,
-        PassengerRideStatus.emCorrida,
-      ]) {
-        expect(
-          BackgroundNotificationRule.evaluate(_evento(20007), _estado(s)),
-          isNull,
-          reason: '$s',
-        );
-      }
-    });
+    test(
+      '20007 fora de motoristaACaminho: nada (guarda de confirmar encontro)',
+      () {
+        for (final s in [
+          PassengerRideStatus.orcamentoAceito,
+          PassengerRideStatus.emCorrida,
+        ]) {
+          expect(
+            BackgroundNotificationRule.evaluate(_evento(20007), _estado(s)),
+            isNull,
+            reason: '$s',
+          );
+        }
+      },
+    );
 
     test('sem chave pública do passageiro no estado: nada', () {
       expect(
@@ -209,10 +211,10 @@ void main() {
 
     test('evento malformado não lança', () {
       expect(
-        BackgroundNotificationRule.evaluate(
-          {'kind': 'x', 'tags': 5},
-          _estado(PassengerRideStatus.emCorrida),
-        ),
+        BackgroundNotificationRule.evaluate({
+          'kind': 'x',
+          'tags': 5,
+        }, _estado(PassengerRideStatus.emCorrida)),
         isNull,
       );
     });

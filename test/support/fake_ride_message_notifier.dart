@@ -6,7 +6,10 @@ class FakeRideMessageNotifier implements RideMessageNotifier {
   int cancelAllCalls = 0;
 
   @override
-  Future<void> notify(BackgroundNotification notification, String eventId) async {
+  Future<void> notify(
+    BackgroundNotification notification,
+    String eventId,
+  ) async {
     notified.add((notification, eventId));
   }
 

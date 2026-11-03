@@ -107,8 +107,9 @@ void main() {
     });
 
     test('registra a inscrição sozinho, com o marcador e os kinds', () {
-      final reqs = transport.conexoes[defaultRelays.first]!.enviadas
-          .where((m) => m.contains('"$eventSubscriptionId"'));
+      final reqs = transport.conexoes[defaultRelays.first]!.enviadas.where(
+        (m) => m.contains('"$eventSubscriptionId"'),
+      );
       expect(reqs, isNotEmpty);
       expect(reqs.first, contains('#t'));
       expect(reqs.first, contains(prototypeMarker));
@@ -133,9 +134,7 @@ void main() {
     });
 
     test('descarta evento sem o marcador do protótipo', () async {
-      emitir(
-        eventoAssinado(autor: motorista, kind: 20005, comMarcador: false),
-      );
+      emitir(eventoAssinado(autor: motorista, kind: 20005, comMarcador: false));
       await pump();
       expect(eventosNaUi(), isEmpty);
       expect(core.discardedUnmarkedCount, 1);
@@ -179,9 +178,8 @@ void main() {
 
     test('com a interface em primeiro plano só a tela reage', () async {
       estado(
-        corridaAceita(
-          PassengerRideStatus.motoristaACaminho,
-        ).copyWith(appInForeground: true),
+        corridaAceita(PassengerRideStatus.motoristaACaminho)
+            .copyWith(appInForeground: true),
       );
       emitir(aviso(20007));
       await pump();
@@ -287,7 +285,10 @@ void main() {
 
     test('subscribe registra e reenvia a conexões novas', () async {
       canal.ui.send(
-        const ServiceSubscribe(subscriptionId: 'outra', request: '["REQ","outra",{}]'),
+        const ServiceSubscribe(
+          subscriptionId: 'outra',
+          request: '["REQ","outra",{}]',
+        ),
       );
       await pump();
       expect(
@@ -304,21 +305,22 @@ void main() {
       await pump();
       expect(transport.tentativas, antes);
 
-      canal.ui.send(
-        const ServiceStart([Relay(url: 'wss://novo.example')]),
-      );
+      canal.ui.send(const ServiceStart([Relay(url: 'wss://novo.example')]));
       await pump();
       expect(relays.current.map((r) => r.url), ['wss://novo.example']);
     });
 
-    test('o estado recebido é persistido (FR-011), sem appInForeground', () async {
-      estado(corridaAceita(PassengerRideStatus.emCorrida));
-      await pump();
-      final lido = await ServiceStateStore(store).load();
-      expect(lido.rideStatus, PassengerRideStatus.emCorrida);
-      expect(lido.quoteId, 'quote-1');
-      expect(lido.appInForeground, isFalse);
-    });
+    test(
+      'o estado recebido é persistido (FR-011), sem appInForeground',
+      () async {
+        estado(corridaAceita(PassengerRideStatus.emCorrida));
+        await pump();
+        final lido = await ServiceStateStore(store).load();
+        expect(lido.rideStatus, PassengerRideStatus.emCorrida);
+        expect(lido.quoteId, 'quote-1');
+        expect(lido.appInForeground, isFalse);
+      },
+    );
 
     test('mudanças nos relays são espelhadas para a interface', () async {
       canal.ui.send(const ServiceRemoveRelay('wss://nos.lol'));
@@ -331,9 +333,8 @@ void main() {
   });
 
   test('reiniciado pelo sistema, relê o estado persistido', () async {
-    await ServiceStateStore(store).save(
-      corridaAceita(PassengerRideStatus.motoristaACaminho),
-    );
+    await ServiceStateStore(store)
+        .save(corridaAceita(PassengerRideStatus.motoristaACaminho));
     final outroCanal = MemoryChannelPair();
     final outro = RelayHostCore(
       relays: RelayService(transport: FakeTransport({})),

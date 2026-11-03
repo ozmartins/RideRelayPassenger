@@ -9,6 +9,7 @@ import 'package:passenger/services/background/message_channel.dart';
 import 'package:passenger/services/background/service_messages.dart';
 import 'package:passenger/services/background/service_state_store.dart';
 import 'package:passenger/services/event_verifier.dart';
+import 'package:passenger/services/flow_log.dart';
 import 'package:passenger/services/relay_hub.dart';
 import 'package:passenger/services/relay_repository.dart';
 import 'package:passenger/services/ride_message_notifier.dart';
@@ -38,6 +39,7 @@ class RelayHostCore {
     this.maxSeenIds = 500,
     DateTime Function()? now,
     this.onStopRequested,
+    this.log = const NoFlowLog(),
   }) : acceptedKinds = acceptedKinds ?? passengerConsumedKinds,
        _now = now ?? DateTime.now;
 
@@ -64,6 +66,9 @@ class RelayHostCore {
 
   /// Tamanho da janela de ids vistos, para a memória não crescer sem limite.
   final int maxSeenIds;
+
+  /// Log do fluxo (feature 029), gravado pelo isolate do serviço.
+  final FlowLog log;
 
   /// Chamado quando a interface pede para encerrar o serviço.
   final Future<void> Function()? onStopRequested;
@@ -157,6 +162,7 @@ class RelayHostCore {
     // 1. assinatura antes de qualquer outro processamento (Princípio IV)
     if (!verifier.isValid(payload)) {
       _discardedInvalid++;
+      _registrar(message, payload, 'descartou', 'assinatura');
       return;
     }
 
@@ -167,6 +173,7 @@ class RelayHostCore {
     // 2. marcador do protótipo (contrato, regra 6)
     if (!hasPrototypeMarker(payload['tags'] as List<dynamic>?)) {
       _discardedUnmarked++;
+      _registrar(message, payload, 'descartou', 'marcador');
       return;
     }
 
@@ -174,15 +181,33 @@ class RelayHostCore {
     final id = payload['id'] as String;
     if (!_seenIds.add(id)) {
       _discardedDuplicate++;
+      _registrar(message, payload, 'descartou', 'duplicado');
       return;
     }
     if (_seenIds.length > maxSeenIds) _seenIds.remove(_seenIds.first);
+    _registrar(message, payload, 'recebeu', null);
 
     channel.send(
       ServiceRelayMessage(relayUrl: message.url, payload: message.payload),
     );
 
     _maybeNotify(message, payload);
+  }
+
+  void _registrar(
+    RelayMessage message,
+    Map<String, dynamic> payload,
+    String acao,
+    String? motivo,
+  ) {
+    log.eventoRecebido(
+      payload,
+      message.url,
+      comp: 'servico',
+      op: 'evento.$acao',
+      res: acao == 'recebeu' ? FlowLog.ok : FlowLog.descartado,
+      motivo: motivo,
+    );
   }
 
   void _maybeNotify(RelayMessage message, Map<String, dynamic> payload) {

@@ -11,6 +11,7 @@ import 'package:passenger/domain/receipt.dart';
 import 'package:passenger/domain/reputation.dart';
 import 'package:passenger/domain/ride_request.dart';
 import 'package:passenger/services/event_verifier.dart';
+import 'package:passenger/services/flow_log.dart';
 import 'package:passenger/services/message_cipher.dart';
 import 'package:passenger/services/relay_hub.dart';
 import 'package:passenger/services/subscription_request.dart';
@@ -116,11 +117,20 @@ class EventFeed {
     this.publishTimeout = const Duration(seconds: 10),
     Set<int>? acceptedKinds,
     MessageCipher? cipher,
+    this.log = const NoFlowLog(),
+    this.logReception = true,
   }) : acceptedKinds = acceptedKinds ?? const {rideQuoteKind},
        _cipher = cipher ?? MessageCipher();
 
   final RelayHub relayService;
   final EventVerifier verifier;
+
+  /// Log do fluxo (feature 029): publicações e, se [logReception], o que chega.
+  final FlowLog log;
+
+  /// Falso quando a recepção é registrada pelo serviço em segundo plano
+  /// (`RelayHostCore`), para não contar o mesmo evento duas vezes.
+  final bool logReception;
 
   /// Cifra o `content` dos kinds com destinatário (emenda 17 do contrato).
   final MessageCipher _cipher;
@@ -404,6 +414,13 @@ class EventFeed {
           ? content
           : _cipher.encryptFor(identity, recipientPubkey, content);
     } on Object {
+      log.registrar(
+        comp: 'feed',
+        op: 'evento.publicou',
+        res: FlowLog.falha,
+        kind: kind,
+        motivo: 'cifra',
+      );
       return const PublishReport(eventId: '', byRelay: {});
     }
 
@@ -416,6 +433,15 @@ class EventFeed {
     final id = evento.id!;
 
     final destinos = relayService.connectedUrls;
+    log.registrar(
+      comp: 'feed',
+      op: 'evento.publicou',
+      kind: kind,
+      id: id,
+      n: destinos.length,
+      res: destinos.isEmpty ? FlowLog.falha : FlowLog.info,
+      motivo: destinos.isEmpty ? 'sem_relay' : null,
+    );
     if (destinos.isEmpty) {
       return PublishReport(eventId: id, byRelay: const {});
     }
@@ -439,6 +465,22 @@ class EventFeed {
     );
     _okWaiters.remove(id);
 
+    resultados.forEach((url, status) {
+      log.registrar(
+        comp: 'feed',
+        op: 'relay.ok',
+        res: status == PublishStatus.accepted ? FlowLog.ok : FlowLog.falha,
+        kind: kind,
+        id: id,
+        relay: url,
+        motivo: switch (status) {
+          PublishStatus.accepted => null,
+          PublishStatus.rejected => 'rejeitado',
+          PublishStatus.noAnswer => 'sem_resposta',
+        },
+      );
+    });
+
     return PublishReport(eventId: id, byRelay: resultados);
   }
 
@@ -451,7 +493,7 @@ class EventFeed {
         if (dados.length < 3) return;
         final payload = dados[2];
         if (payload is! Map<String, dynamic>) return;
-        _onEvent(payload);
+        _onEvent(payload, mensagem.url);
       case 'OK':
         if (dados.length < 3) return;
         final id = dados[1];
@@ -473,25 +515,56 @@ class EventFeed {
     }
   }
 
-  void _onEvent(Map<String, dynamic> payload) {
+  void _descarte(Map<String, dynamic> payload, String url, String motivo) {
+    if (!logReception) return;
+    log.eventoRecebido(
+      payload,
+      url,
+      comp: 'feed',
+      op: 'evento.descartou',
+      res: FlowLog.descartado,
+      motivo: motivo,
+    );
+  }
+
+  void _onEvent(Map<String, dynamic> payload, String url) {
     final id = payload['id'];
     if (id is! String) return;
 
     // Deduplicar antes de verificar: verificação é a parte cara, e o mesmo
     // evento chega por vários relays (FR-010).
-    if (_seenIds.contains(id)) return;
+    if (_seenIds.contains(id)) {
+      _descarte(payload, url, 'duplicado');
+      return;
+    }
 
     // Regra 1 de recepção: verificar a assinatura **antes** de qualquer outro
     // processamento.
-    if (!verifier.isValid(payload)) return;
+    if (!verifier.isValid(payload)) {
+      _descarte(payload, url, 'assinatura');
+      return;
+    }
 
     // Regra 6: o relay pode ignorar o filtro #t da inscrição; não dependemos do
     // bom comportamento dele.
-    if (!hasPrototypeMarker(payload['tags'] as List<dynamic>?)) return;
+    if (!hasPrototypeMarker(payload['tags'] as List<dynamic>?)) {
+      _descarte(payload, url, 'marcador');
+      return;
+    }
 
     // Regra 4: kind fora do que este EventFeed aceita é ignorado sem erro.
     final kind = payload['kind'];
     if (kind is! int || !acceptedKinds.contains(kind)) return;
+
+    if (logReception) {
+      log.eventoRecebido(
+        payload,
+        url,
+        comp: 'feed',
+        op: 'evento.recebeu',
+        res: FlowLog.ok,
+      );
+    }
 
     final declarado = DateTime.fromMillisecondsSinceEpoch(
       (payload['created_at'] as int) * 1000,

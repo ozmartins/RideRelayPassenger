@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 
 import 'package:passenger/domain/relay.dart';
+import 'package:passenger/services/flow_log.dart';
 import 'package:passenger/services/relay_hub.dart';
 import 'package:passenger/services/relay_transport.dart';
 
@@ -21,11 +22,15 @@ class RelayService implements RelayHub {
     this.connectTimeout = const Duration(seconds: 10),
     this.livenessTimeout = const Duration(seconds: 10),
     this.retryInterval = const Duration(seconds: 15),
+    this.log = const NoFlowLog(),
   });
 
   /// Transporte injetado. Público para que o teste possa fornecer um dublê sem
   /// que a classe precise de uma fábrica só para isso.
   final RelayTransport transport;
+
+  /// Log do fluxo (feature 029): conexões e quedas.
+  final FlowLog log;
 
   /// Limite para estabelecer a conexão com o relay.
   final Duration connectTimeout;
@@ -272,6 +277,12 @@ class RelayService implements RelayHub {
       status: RelayStatus.connected,
       clearError: true,
     );
+    log.registrar(
+      comp: 'relay',
+      op: 'relay.conectou',
+      res: FlowLog.ok,
+      relay: url,
+    );
 
     // Reinscreve nesta conexão. Roda uma vez por conexão estabelecida, então
     // não duplica: a conexão anterior, se houve, já morreu.
@@ -296,6 +307,15 @@ class RelayService implements RelayHub {
     if (relay.status == RelayStatus.unavailable && relay.lastError == motivo) {
       return;
     }
+    log.registrar(
+      comp: 'relay',
+      op: relay.status == RelayStatus.connected
+          ? 'relay.caiu'
+          : 'relay.conectou',
+      res: FlowLog.falha,
+      relay: url,
+      motivo: relay.status == RelayStatus.connected ? 'encerrada' : 'falha',
+    );
     _relays[url] = relay.copyWith(
       status: RelayStatus.unavailable,
       lastError: motivo,

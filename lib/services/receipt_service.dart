@@ -8,6 +8,7 @@ import '../domain/receipt.dart';
 import '../domain/relay.dart';
 import '../domain/reputation.dart';
 import 'event_feed.dart';
+import 'flow_log.dart';
 import 'receipt_signature.dart';
 import 'receipt_store.dart';
 import 'reputation_verifier.dart';
@@ -122,6 +123,13 @@ class ReceiptService {
       hashAnterior: declarada.head,
     );
     await store.saveIssued(recibo);
+    feed.log.registrar(
+      comp: 'recibo',
+      op: 'recibo.emitiu',
+      res: FlowLog.ok,
+      id: recibo.idRecibo,
+      guid: ride.quoteId,
+    );
     unawaited(_publish(recibo));
     return ReceiptIssueOutcome.issued;
   }
@@ -170,6 +178,13 @@ class ReceiptService {
       if (claro.authorPublicKey != emitido.pubkeyAvaliado) return;
       if (dados['id_recibo'] != emitido.idRecibo) return;
       await store.markAcked(emitido.idRecibo);
+      feed.log.registrar(
+        comp: 'recibo',
+        op: 'recibo.confirmou',
+        res: FlowLog.ok,
+        id: emitido.idRecibo,
+        guid: guid,
+      );
     } on Object {
       // content é dado: o que não se entende é ignorado.
     }

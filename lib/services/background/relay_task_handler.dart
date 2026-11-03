@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flutter_foreground_task/flutter_foreground_task.dart';
 
+import 'package:passenger/services/flow_log_file.dart';
 import 'package:passenger/services/background/foreground_task_channels.dart';
 import 'package:passenger/services/background/relay_host_core.dart';
 import 'package:passenger/services/background/service_state_store.dart';
@@ -34,13 +35,16 @@ class RelayTaskHandler extends TaskHandler {
     // registrados no isolate do serviço.
     DartPluginRegistrant.ensureInitialized();
 
+    final log = FileFlowLog(papel: 'passageiro', iso: 'servico');
+    log.registrar(comp: 'servico', op: 'app.inicio');
     const store = FreshPrefsKeyValueStore();
     _core = RelayHostCore(
-      relays: RelayService(transport: const WsRelayTransport()),
+      relays: RelayService(transport: const WsRelayTransport(), log: log),
       channel: _channel,
       stateStore: ServiceStateStore(store),
       relayRepository: RelayRepository(store),
       notifier: LocalRideMessageNotifier(),
+      log: log,
       onStopRequested: () async {
         await FlutterForegroundTask.stopService();
       },

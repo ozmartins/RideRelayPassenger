@@ -7,6 +7,8 @@ import 'package:passenger/screens/home_screen.dart';
 import 'package:passenger/screens/map_screen.dart';
 import 'package:passenger/screens/name_screen.dart';
 import 'package:passenger/services/accepted_ride_store.dart';
+import 'package:passenger/services/flow_log.dart';
+import 'package:passenger/services/flow_log_file.dart';
 import 'package:passenger/services/destination_store.dart';
 import 'package:passenger/services/background/background_service.dart';
 import 'package:passenger/services/background/foreground_task_channels.dart';
@@ -88,8 +90,13 @@ class _BootstrapState extends State<_Bootstrap> {
   final RelayRepository _relayRepository = RelayRepository(
     const PrefsKeyValueStore(),
   );
+  // Feature 029: log do fluxo. A recepção é registrada pelo serviço em segundo
+  // plano; aqui ficam as publicações, os recibos e a corrida.
+  final FlowLog _flowLog = FileFlowLog(papel: 'passageiro', iso: 'ui');
   late final EventFeed _eventFeed = EventFeed(
     relayService: _relayService,
+    log: _flowLog,
+    logReception: false,
     // FR-001 da feature 008: sem isto, todo orçamento recebido chega como
     // kind não aceito e é ignorado sem erro (contrato, regra 4). Emenda 10 /
     // feature 009: acrescenta driverLocationKind, para reconhecer o início
@@ -121,8 +128,11 @@ class _BootstrapState extends State<_Bootstrap> {
   final DestinationStore _destinationStore = PreferencesDestinationStore(
     const PrefsKeyValueStore(),
   );
-  final PassengerRideStateStore _rideStateStore =
-      PreferencesPassengerRideStateStore(const PrefsKeyValueStore());
+  late final PassengerRideStateStore _rideStateStore =
+      LoggingPassengerRideStateStore(
+        PreferencesPassengerRideStateStore(const PrefsKeyValueStore()),
+        _flowLog,
+      );
   final RideRatingStore _rideRatingStore = SqfliteRideRatingStore();
   final ReceiptStore _receiptStore = SqfliteReceiptStore();
   String? _nomeAtual;
@@ -131,6 +141,7 @@ class _BootstrapState extends State<_Bootstrap> {
   @override
   void initState() {
     super.initState();
+    _flowLog.registrar(comp: 'app', op: 'app.inicio');
     _identidade = IdentityService(const FlutterSecureStore()).loadOrCreate();
     _iniciarRelays();
     _carregarNome();

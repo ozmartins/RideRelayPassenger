@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../domain/passenger_ride_status.dart';
+import 'flow_log.dart';
 import 'key_value_store.dart';
 
 /// Persiste o estado de corrida do passageiro introduzido pela feature 014
@@ -59,5 +60,32 @@ class PreferencesPassengerRideStateStore implements PassengerRideStateStore {
       storageKey,
       jsonEncode({'status': status.name, 'solicitacaoId': ?solicitacaoId}),
     );
+  }
+}
+
+/// Registra no log do fluxo cada mudança de estado da corrida (feature 029),
+/// sem alterar o que é persistido. Só o novo estado e o id da solicitação.
+class LoggingPassengerRideStateStore implements PassengerRideStateStore {
+  LoggingPassengerRideStateStore(this._inner, this._log);
+
+  final PassengerRideStateStore _inner;
+  final FlowLog _log;
+  PassengerRideStatus? _ultimo;
+
+  @override
+  Future<(PassengerRideStatus, String?)> load() => _inner.load();
+
+  @override
+  Future<void> save(PassengerRideStatus status, String? solicitacaoId) async {
+    if (status != _ultimo) {
+      _ultimo = status;
+      _log.registrar(
+        comp: 'corrida',
+        op: 'corrida.estado',
+        motivo: status.name.toLowerCase(),
+        guid: solicitacaoId,
+      );
+    }
+    await _inner.save(status, solicitacaoId);
   }
 }

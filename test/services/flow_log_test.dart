@@ -1,9 +1,15 @@
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
 import 'package:passenger/services/flow_log.dart';
 import 'package:passenger/services/flow_log_file.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:latlong2/latlong.dart';
+import 'package:passenger/domain/address_suggestion.dart';
+import 'package:passenger/domain/route_result.dart';
+import 'package:passenger/services/geocoding_service.dart';
+import 'package:passenger/services/route_service.dart';
 import 'package:passenger/domain/identity.dart';
 import 'package:passenger/domain/received_quote.dart';
 import 'package:passenger/domain/relay.dart';
@@ -248,4 +254,47 @@ void main() {
       log.registrar(comp: 'app', op: 'app.inicio');
     });
   });
+
+  group('falha de serviço externo', () {
+    test('motivoExterno classifica sem copiar o texto do erro', () {
+      expect(motivoExterno(Exception('HTTP 429 Too Many Requests')), 'http429');
+      expect(motivoExterno(TimeoutException('x')), 'timeout');
+      expect(motivoExterno(Exception('Rua das Flores 123')), 'erro');
+    });
+
+    test('registra externo.falha só com serviço e código, e relança', () async {
+      final log = MemoryFlowLog();
+      final rota = LoggingRouteService(_RotaQueFalha(), log);
+      await expectLater(
+        rota.route(
+          origin: const LatLng(-27.5, -48.5),
+          destination: const LatLng(-27.6, -48.6),
+        ),
+        throwsA(isA<RouteFailure>()),
+      );
+      final foto = LoggingGeocodingService(_FotonQueFalha(), log);
+      await expectLater(
+        foto.search('Rua das Flores 123'),
+        throwsA(isA<GeocodingFailure>()),
+      );
+      expect([for (final l in log.linhas) l['ext']], ['ors', 'photon']);
+      expect(log.linhas.first['motivo'], 'http429');
+      expect(log.texto, isNot(contains('Flores')));
+      expect(log.texto, isNot(contains('-27.5')));
+    });
+  });
+}
+
+class _RotaQueFalha implements RouteService {
+  @override
+  Future<RouteResult> route({
+    required LatLng origin,
+    required LatLng destination,
+  }) async => throw const RouteFailure('HTTP 429');
+}
+
+class _FotonQueFalha implements GeocodingService {
+  @override
+  Future<List<AddressSuggestion>> search(String text) async =>
+      throw const GeocodingFailure('timeout');
 }

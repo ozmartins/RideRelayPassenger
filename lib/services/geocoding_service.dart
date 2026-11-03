@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import '../domain/address_suggestion.dart';
+import 'flow_log.dart';
 
 /// Busca de endereços a partir de texto livre (Key Entities do `spec.md`).
 ///
@@ -137,4 +138,22 @@ class GeocodingFailure implements Exception {
 
   @override
   String toString() => 'Falha na busca de endereço: $cause';
+}
+
+/// Registra no log do fluxo as falhas da Photon, sem alterar o resultado.
+class LoggingGeocodingService implements GeocodingService {
+  LoggingGeocodingService(this._inner, this._log);
+
+  final GeocodingService _inner;
+  final FlowLog _log;
+
+  @override
+  Future<List<AddressSuggestion>> search(String text) async {
+    try {
+      return await _inner.search(text);
+    } on Object catch (erro) {
+      _log.externoFalhou('photon', erro);
+      rethrow;
+    }
+  }
 }

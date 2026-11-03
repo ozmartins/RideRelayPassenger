@@ -119,8 +119,14 @@ class _BootstrapState extends State<_Bootstrap> {
   );
   final NameService _nameService = NameService(const PrefsKeyValueStore());
   final LocationService _locationService = const GeolocatorLocationService();
-  final GeocodingService _geocodingService = PhotonGeocodingService();
-  final RouteService _routeService = OrsRouteService();
+  late final GeocodingService _geocodingService = LoggingGeocodingService(
+    PhotonGeocodingService(),
+    _flowLog,
+  );
+  late final RouteService _routeService = LoggingRouteService(
+    OrsRouteService(),
+    _flowLog,
+  );
   final ReceivedQuoteStore _receivedQuoteStore = SqfliteReceivedQuoteStore();
   final AcceptedRideStore _acceptedRideStore = PreferencesAcceptedRideStore(
     const PrefsKeyValueStore(),

@@ -633,6 +633,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
     if (corrida == null || !PassengerRideRules.canCancelRide(_rideStatus)) {
       return;
     }
+    _acao('cancelar_corrida', guid: corrida.quoteId);
     _encerrarCorridaAceita(() {});
     unawaited(_publicarCancelamento(corrida));
   }
@@ -757,8 +758,17 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
 
   /// Toque no botão de chegada ao destino: publica a confirmação e, em
   /// falha, mostra a mensagem junto ao botão.
+  /// Registra uma ação do usuário no log do fluxo (feature 029).
+  void _acao(String nome, {String? guid}) => widget.eventFeed.log.registrar(
+    comp: 'tela',
+    op: 'tela.acao',
+    motivo: nome,
+    guid: guid,
+  );
+
   Future<void> _aoTocarConfirmarDestino() async {
     if (_confirmandoDestino) return;
+    _acao('confirmar_destino', guid: _corridaAceita?.quoteId);
     setState(() {
       _confirmandoDestino = true;
       _erroConfirmarDestino = null;
@@ -784,6 +794,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           'conecte-se a um relay e tente novamente.';
     }
 
+    _acao('confirmar_encontro', guid: corridaAceita.quoteId);
     final relato = await widget.eventFeed.publishMeetingConfirmation(
       corridaAceita.quoteId,
       corridaAceita.driverPubkey,
@@ -859,6 +870,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
       return;
     }
     final corrida = _corridaAceita;
+    _acao('avaliar', guid: rideId);
     await widget.rideRatingStore.save(
       RideRating(rideId: rideId, stars: stars, ratedAt: DateTime.now()),
       widget.identity,
@@ -874,6 +886,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// estado a `inicial` (FR-008 da feature 011; FR-008 da feature 014).
   void _pularAvaliacao() {
     if (!PassengerRideRules.canFinishRating(_rideStatus)) return;
+    _acao('pular_avaliacao', guid: _corridaAceita?.quoteId);
     // Pular conta como corrida, não como avaliação: recibo sem nota.
     unawaited(_emitirRecibo(_corridaAceita, null));
     _finalizarAvaliacao();
@@ -928,6 +941,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
           'conecte-se a um relay e tente novamente.';
     }
 
+    _acao('aceitar_orcamento', guid: quote.quoteId);
     final relato = await widget.eventFeed.publishQuoteAcceptance(
       quote,
       widget.identity,
@@ -989,6 +1003,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// vazia não publica nenhuma recusa (FR-009, cenário 3 do spec.md).
   void _cancelarSolicitacao() {
     if (!PassengerRideRules.canCancelRequest(_rideStatus)) return;
+    _acao('cancelar_solicitacao');
 
     for (final orcamento in _orcamentosRecebidos.value) {
       unawaited(
@@ -1177,6 +1192,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// — sempre a partir do `displayText` e das coordenadas de uma
   /// [AddressSuggestion] selecionada, nunca do texto bruto digitado.
   void _selecionarSugestao(AddressSuggestion sugestao) {
+    _acao('selecionar_destino');
     _debounce?.cancel();
     final destino = DestinationAddress(
       sugestao.displayText,
@@ -1215,6 +1231,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
   /// `aguardandoOrcamentos` (FR-003 da feature 014) — só chamado a partir
   /// de `inicial` (o botão só existe fora do fluxo de uma corrida ativa).
   Future<void> _solicitarCorrida() async {
+    _acao('solicitar_corrida');
     if (_destino == null) {
       _avisar('Escolha um destino antes de solicitar a corrida.');
       return;
@@ -1341,7 +1358,7 @@ class _MapScreenState extends State<MapScreen> with WidgetsBindingObserver {
                     backgroundColor: const Color(0xFFE5DFEF),
                   ),
                   children: [
-                    const CamadaMapaBase(),
+                    CamadaMapaBase(log: widget.eventFeed.log),
                     if (posicao != null)
                       MarkerLayer(
                         markers: [

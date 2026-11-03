@@ -3,6 +3,7 @@ import 'package:latlong2/latlong.dart';
 import 'package:open_route_service/open_route_service.dart';
 
 import '../domain/route_result.dart';
+import 'flow_log.dart';
 import 'ors_api_key.dart';
 
 /// Cálculo de rota real (rodoviária, não linha reta) entre dois pontos.
@@ -119,4 +120,26 @@ class _AuthorizingHttpClient extends http.BaseClient {
 
   @override
   void close() => _inner.close();
+}
+
+/// Registra no log do fluxo as falhas do serviço decorado (openrouteservice),
+/// sem alterar o resultado nem a exceção.
+class LoggingRouteService implements RouteService {
+  LoggingRouteService(this._inner, this._log);
+
+  final RouteService _inner;
+  final FlowLog _log;
+
+  @override
+  Future<RouteResult> route({
+    required LatLng origin,
+    required LatLng destination,
+  }) async {
+    try {
+      return await _inner.route(origin: origin, destination: destination);
+    } on Object catch (erro) {
+      _log.externoFalhou('ors', erro);
+      rethrow;
+    }
+  }
 }

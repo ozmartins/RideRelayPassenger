@@ -58,3 +58,7 @@ key.properties
 google-services.json
 assets/ors_api_key.txt
 *.db
+
+# Logs extraídos dos aparelhos (tool/extract_logs.sh): contêm dados de passageiros
+/logs-passenger/
+/logs-driver/

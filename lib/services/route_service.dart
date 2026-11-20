@@ -34,9 +34,13 @@ abstract class RouteService {
 /// `--dart-define=ORS_API_KEY` do build (`OrsApiKey`).
 class OrsRouteService implements RouteService {
   OrsRouteService({String? apiKey, OpenRouteService? client})
-    : _client = client ?? _buildClient(apiKey ?? OrsApiKey.value);
+    : _client = client ?? _buildClient(apiKey ?? OrsApiKey.value),
+      // Só vale para a chave do build: um `client` injetado (testes) traz a
+      // sua e não deve ser barrado aqui.
+      _semChave = client == null && (apiKey ?? OrsApiKey.value).isEmpty;
 
   final OpenRouteService _client;
+  final bool _semChave;
 
   // O pacote `open_route_service` 1.2.9 envia a chave só como query param
   // `api_key=`, formato que a API atual do openrouteservice.org rejeita com
@@ -53,6 +57,11 @@ class OrsRouteService implements RouteService {
     required LatLng origin,
     required LatLng destination,
   }) async {
+    // Sem chave a API só responderia 401: falha já, sem ir à rede, e com um
+    // motivo legível no log do fluxo.
+    if (_semChave) {
+      throw const RouteFailure('chave ORS_API_KEY ausente no build');
+    }
     final GeoJsonFeatureCollection resposta;
     try {
       // Sempre `driving-car`, mesmo com um `OpenRouteService` injetado sem

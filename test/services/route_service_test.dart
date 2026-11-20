@@ -122,4 +122,19 @@ void main() {
       throwsA(isA<RouteFailure>()),
     );
   });
+
+  test('lança RouteFailure sem chamar a rede quando a chave está vazia', () {
+    final servico = OrsRouteService(apiKey: '');
+
+    expect(
+      () => servico.route(origin: _origem, destination: _destino),
+      throwsA(
+        isA<RouteFailure>().having(
+          (falha) => falha.cause.toString(),
+          'causa',
+          contains('ORS_API_KEY'),
+        ),
+      ),
+    );
+  });
 }
